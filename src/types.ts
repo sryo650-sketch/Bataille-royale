@@ -40,4 +40,22 @@ export enum Screen {
   HOME = 'HOME',
   GAME = 'GAME',
   STATS = 'STATS',
+  CHALLENGE = 'CHALLENGE',
 }
+
+export type GameMode = 'classic' | 'rapid' | 'daily';
+
+export interface ChallengeOpponent {
+  id: string;
+  name: string;
+  countryCode: string;
+  avatar?: string;
+  elo?: number;
+}
+
+export interface GameConfig {
+  mode: GameMode;
+  opponent?: ChallengeOpponent;
+}
+
+export type NavigationHandler = (screen: Screen, options?: { gameConfig?: GameConfig }) => void;

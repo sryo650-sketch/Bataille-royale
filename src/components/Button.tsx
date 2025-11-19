@@ -1,8 +1,11 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { Pressable, Text, StyleSheet, ViewStyle, TextStyle, StyleProp, AccessibilityRole } from 'react-native';
 
 type Variant = 'primary' | 'secondary' | 'outline' | 'ghost';
 type Size = 'sm' | 'md' | 'lg';
+
+type SizeTextKey = `${Size}Text`;
+type VariantTextKey = `${Variant}Text`;
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -11,8 +14,10 @@ interface ButtonProps {
   fullWidth?: boolean;
   size?: Size;
   disabled?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityLabel?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -24,39 +29,33 @@ export const Button: React.FC<ButtonProps> = ({
   disabled = false,
   style,
   textStyle,
+  accessibilityRole,
+  accessibilityLabel,
 }) => {
-  const containerStyles: ViewStyle[] = [
-    styles.base,
-    styles[size],
-    styles[variant],
-  ];
-
-  if (fullWidth) {
-    containerStyles.push(styles.fullWidth);
-  }
-  if (disabled) {
-    containerStyles.push(styles.disabled);
-  }
-  if (style) {
-    containerStyles.push(style);
-  }
-
-  const textStyles: TextStyle[] = [
-    styles.text,
-    styles[`${size}Text` as const] as TextStyle,
-    styles[`${variant}Text` as const] as TextStyle,
-  ];
-
-  if (textStyle) {
-    textStyles.push(textStyle);
-  }
-
   return (
     <Pressable
-      style={containerStyles}
+      style={[
+        styles.base,
+        styles[size],
+        styles[variant],
+        fullWidth ? styles.fullWidth : null,
+        disabled ? styles.disabled : null,
+        style,
+      ]}
       onPress={disabled ? undefined : onPress}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
     >
-      <Text style={textStyles}>{children}</Text>
+      <Text
+        style={[
+          styles.text,
+          styles[`${size}Text` as SizeTextKey],
+          styles[`${variant}Text` as VariantTextKey],
+          textStyle,
+        ]}
+      >
+        {children}
+      </Text>
     </Pressable>
   );
 };

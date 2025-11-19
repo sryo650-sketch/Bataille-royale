@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { memo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Vibration } from 'react-native';
 import { Screen } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUserStats } from '../contexts/UserStatsContext';
 import { getFlagEmoji } from '../utils/countryUtils';
 import { Button } from '../components/Button';
+import { COUNTRY_LEADERBOARDS, GLOBAL_LEADERBOARD, LeaderboardEntry } from '../constants';
 
 interface StatsScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -18,10 +19,21 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onNavigate }) => {
     ? Math.round((stats.wins / stats.gamesPlayed) * 100)
     : 0;
 
+  const countryLeaderboard: LeaderboardEntry[] =
+    COUNTRY_LEADERBOARDS[stats.countryCode] ?? [];
+
+  const vibrateSection = () => Vibration.vibrate(10);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Button size="sm" variant="ghost" onPress={() => onNavigate(Screen.HOME)}>
+        <Button
+          size="sm"
+          variant="ghost"
+          accessibilityRole="button"
+          accessibilityLabel={t.return_menu}
+          onPress={() => onNavigate(Screen.HOME)}
+        >
           <Text style={styles.backText}>{'<'} {t.return_menu}</Text>
         </Button>
         <Text style={styles.headerTitle}>{t.my_profile}</Text>
@@ -32,10 +44,13 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onNavigate }) => {
         <View style={styles.rankCard}>
           <View style={styles.avatarWrapper}>
             <View style={styles.avatarCircle}>
-              <Text style={styles.avatarInitials}>BR</Text>
+              <Image
+                source={stats.avatar ? { uri: stats.avatar } : placeholderAvatar}
+                style={styles.avatarImage}
+              />
             </View>
             <View style={styles.flagBadge}>
-              <Text style={styles.flagText}>{getFlagEmoji(stats.countryCode)}</Text>
+              <Text style={styles.flagText}>{getFlagEmoji(stats.countryCode) ?? '🏳️'}</Text>
             </View>
           </View>
           <View style={styles.rankInfo}>
@@ -73,31 +88,86 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onNavigate }) => {
         </View>
 
         <View style={styles.historySection}>
-          <Text style={styles.historyTitle}>{t.history}</Text>
+          <TouchableOpacity onPress={vibrateSection} activeOpacity={0.7}>
+            <Text style={styles.sectionTitle}>{t.history}</Text>
+          </TouchableOpacity>
           {stats.history.length === 0 ? (
-            <Text style={styles.emptyHistory}>Aucun match joué pour le moment.</Text>
+            <Text style={styles.emptyHistory}>{t.no_history ?? 'Aucun match joué pour le moment.'}</Text>
           ) : (
             stats.history.map(match => (
-              <View key={match.id} style={styles.historyRow}>
-                <View style={styles.historyLeft}>
-                  <View style={[styles.resultBar, {
-                    backgroundColor: match.result === 'WIN' ? '#10B981' : '#EF4444',
-                  }]} />
-                  <View>
-                    <Text style={styles.historyName}>
-                      {match.opponentName} {getFlagEmoji(match.opponentCountry)}
+              <HistoryRow
+                key={`${match.id}-${match.date}`}
+                match={match}
+                getFlagEmoji={getFlagEmoji}
+                translation={t}
+              />
+            ))
+          )}
+        </View>
+
+        <View style={styles.leaderboardSection}>
+          <TouchableOpacity onPress={vibrateSection} activeOpacity={0.7}>
+            <Text style={styles.sectionTitle}>{t.global_leaderboard}</Text>
+          </TouchableOpacity>
+          {GLOBAL_LEADERBOARD.map(entry => (
+            <View key={entry.id} style={styles.leaderboardRow}>
+              <View style={styles.leaderboardLeft}>
+                <View
+                  style={[styles.rankBadge, {
+                    backgroundColor: getRankColor(GLOBAL_LEADERBOARD.findIndex(e => e.id === entry.id)),
+                  }]}
+                >
+                  <Text style={styles.rankBadgeText}>
+                    {GLOBAL_LEADERBOARD.findIndex(e => e.id === entry.id) + 1}
+                  </Text>
+                </View>
+                <View>
+                  <Text style={styles.leaderboardName}>{entry.name}</Text>
+                  <Text style={styles.leaderboardCountry}>
+                    {getFlagEmoji(entry.countryCode)}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.leaderboardRight}>
+                <Text style={styles.leaderboardElo}>{entry.elo} ELO</Text>
+                <Text style={[styles.trend, getTrendStyle(entry.trend)]}>
+                  {getTrendLabel(entry.trend)}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.leaderboardSection}>
+          <TouchableOpacity onPress={vibrateSection} activeOpacity={0.7}>
+            <Text style={styles.sectionTitle}>{t.country_leaderboard}</Text>
+          </TouchableOpacity>
+          {countryLeaderboard.length === 0 ? (
+            <Text style={styles.emptyHistory}>{t.no_country_leaderboard}</Text>
+          ) : (
+            countryLeaderboard.map(entry => (
+              <View key={entry.id} style={styles.leaderboardRow}>
+                <View style={styles.leaderboardLeft}>
+                  <View
+                    style={[styles.rankBadge, {
+                      backgroundColor: getRankColor(countryLeaderboard.findIndex(e => e.id === entry.id)),
+                    }]}
+                  >
+                    <Text style={styles.rankBadgeText}>
+                      {countryLeaderboard.findIndex(e => e.id === entry.id) + 1}
                     </Text>
-                    <Text style={styles.historyDate}>{match.date}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.leaderboardName}>{entry.name}</Text>
+                    <Text style={styles.leaderboardCountry}>
+                      {getFlagEmoji(entry.countryCode)}
+                    </Text>
                   </View>
                 </View>
-                <View style={styles.historyRight}>
-                  <Text style={[styles.historyResult, {
-                    color: match.result === 'WIN' ? '#22C55E' : '#F87171',
-                  }]}>
-                    {match.result === 'WIN' ? t.victory : t.defeat}
-                  </Text>
-                  <Text style={styles.historyScore}>
-                    {match.scoreChange > 0 ? '+' : ''}{match.scoreChange} pts
+                <View style={styles.leaderboardRight}>
+                  <Text style={styles.leaderboardElo}>{entry.elo} ELO</Text>
+                  <Text style={[styles.trend, getTrendStyle(entry.trend)]}>
+                    {getTrendLabel(entry.trend)}
                   </Text>
                 </View>
               </View>
@@ -109,10 +179,89 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onNavigate }) => {
   );
 };
 
+const getTrendLabel = (trend: LeaderboardEntry['trend']) => {
+  if (trend === 'up') {
+    return '▲';
+  }
+  if (trend === 'down') {
+    return '▼';
+  }
+  return '▬';
+};
+
+const getTrendStyle = (trend: LeaderboardEntry['trend']) => {
+  if (trend === 'up') {
+    return styles.trendUp;
+  }
+  if (trend === 'down') {
+    return styles.trendDown;
+  }
+  return styles.trendSteady;
+};
+
+const getRankColor = (index: number) => {
+  if (index === 0) {
+    return '#FFD700';
+  }
+  if (index === 1) {
+    return '#C0C0C0';
+  }
+  if (index === 2) {
+    return '#CD7F32';
+  }
+  return '#111827';
+};
+
+const HistoryRow = memo(({
+  match,
+  getFlagEmoji: flagFn,
+  translation,
+}: {
+  match: ReturnType<typeof useUserStats>['stats']['history'][number];
+  getFlagEmoji: (code: string) => string;
+  translation: ReturnType<typeof useLanguage>['t'];
+}) => (
+  <View style={styles.historyRow}>
+    <View style={styles.historyLeft}>
+      <View style={[styles.resultBar, {
+        backgroundColor: match.result === 'WIN' ? theme.win : theme.loss,
+      }]} />
+      <View>
+        <Text style={styles.historyName}>
+          {match.opponentName} {flagFn(match.opponentCountry) ?? '🏳️'}
+        </Text>
+        <Text style={styles.historyDate}>{match.date}</Text>
+      </View>
+    </View>
+    <View style={styles.historyRight}>
+      <Text style={[styles.historyResult, {
+        color: match.result === 'WIN' ? theme.win : theme.loss,
+      }]}>
+        {match.result === 'WIN' ? translation.victory : translation.defeat}
+      </Text>
+      <Text style={styles.historyScore}>
+        {match.scoreChange > 0 ? '+' : ''}{match.scoreChange} pts
+      </Text>
+    </View>
+  </View>
+));
+
+HistoryRow.displayName = 'HistoryRow';
+
+const placeholderAvatar = require('../assets/placeholder.png');
+const theme = {
+  bg: '#020617',
+  card: '#030712',
+  primary: '#D4AF37',
+  muted: '#9CA3AF',
+  win: '#22C55E',
+  loss: '#F87171',
+} as const;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#020617',
+    backgroundColor: theme.bg,
     paddingTop: 24,
   },
   header: {
@@ -123,10 +272,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   backText: {
-    color: '#9CA3AF',
+    color: theme.muted,
   },
   headerTitle: {
-    color: '#D4AF37',
+    color: theme.primary,
     fontWeight: '700',
   },
   scroll: {
@@ -138,7 +287,7 @@ const styles = StyleSheet.create({
   },
   rankCard: {
     flexDirection: 'row',
-    backgroundColor: '#030712',
+    backgroundColor: theme.card,
     padding: 16,
     borderRadius: 16,
     marginBottom: 24,
@@ -151,13 +300,14 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#D4AF37',
+    backgroundColor: theme.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  avatarInitials: {
-    fontWeight: '800',
-    fontSize: 20,
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   flagBadge: {
     marginTop: 4,
@@ -169,7 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rankLabel: {
-    color: '#9CA3AF',
+    color: theme.muted,
     fontSize: 12,
   },
   rankValue: {
@@ -178,7 +328,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   rankSub: {
-    color: '#22C55E',
+    color: theme.win,
     fontSize: 12,
   },
   statsGrid: {
@@ -189,13 +339,13 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '48%',
-    backgroundColor: '#030712',
+    backgroundColor: theme.card,
     padding: 12,
     borderRadius: 12,
     marginBottom: 12,
   },
   statLabel: {
-    color: '#9CA3AF',
+    color: theme.muted,
     fontSize: 12,
     marginBottom: 4,
   },
@@ -211,7 +361,7 @@ const styles = StyleSheet.create({
   historySection: {
     marginTop: 8,
   },
-  historyTitle: {
+  sectionTitle: {
     color: '#9CA3AF',
     fontWeight: '700',
     marginBottom: 8,
@@ -224,7 +374,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#030712',
+    backgroundColor: theme.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -256,5 +406,61 @@ const styles = StyleSheet.create({
   historyScore: {
     color: '#9CA3AF',
     fontSize: 12,
+  },
+  leaderboardSection: {
+    marginTop: 24,
+  },
+  leaderboardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: theme.card,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  leaderboardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rankBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  rankBadgeText: {
+    color: '#000000',
+    fontWeight: '700',
+  },
+  leaderboardName: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  leaderboardCountry: {
+    color: theme.muted,
+    fontSize: 12,
+  },
+  leaderboardRight: {
+    alignItems: 'flex-end',
+  },
+  leaderboardElo: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  trend: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  trendUp: {
+    color: '#22C55E',
+  },
+  trendDown: {
+    color: '#F87171',
+  },
+  trendSteady: {
+    color: '#9CA3AF',
   },
 });

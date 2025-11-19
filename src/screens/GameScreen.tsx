@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Vibration } from 'react-native';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { CardData, GamePhase, Player, Screen } from '../types';
@@ -7,6 +7,17 @@ import { createDeck, shuffleDeck, splitDeck } from '../services/gameLogic';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUserStats } from '../contexts/UserStatsContext';
 import { getFlagEmoji, getRandomCountry } from '../utils/countryUtils';
+
+const placeholderAvatar = require('../assets/placeholder.png');
+const theme = {
+  bg: '#020617',
+  primary: '#D4AF37',
+  textMuted: '#9CA3AF',
+  surface: '#030712',
+  win: '#22C55E',
+  loss: '#F87171',
+  battle: '#F97316',
+} as const;
 
 interface GameScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -34,7 +45,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
   const [hasPeeked, setHasPeeked] = useState(false);
 
   const roundCountRef = useRef(0);
-  const botTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const botTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const fullDeck = shuffleDeck(createDeck());
@@ -144,6 +155,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
   };
 
   const handleWin = (playerWon: boolean) => {
+    Vibration.vibrate(50);
     setRoundResult(playerWon ? 'WIN' : 'LOSS');
     setMessageKey(playerWon ? 'round_won' : 'round_lost');
 
@@ -260,7 +272,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
           <View style={styles.gameOverRow}>
             <Text style={styles.gameOverLabel}>Adversaire</Text>
             <Text style={styles.gameOverValue}>
-              {opponent.name} {getFlagEmoji(opponent.countryCode || '')}
+              {opponent.name} {getFlagEmoji(opponent.countryCode || '') ?? '🏳️'}
             </Text>
           </View>
         </View>
@@ -274,7 +286,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => onNavigate(Screen.HOME)}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t.return_menu}
+          onPress={() => onNavigate(Screen.HOME)}
+        >
           <Text style={styles.backText}>{'<'} Menu</Text>
         </TouchableOpacity>
         <Text style={[styles.statusText, getStatusColor()]}>{t[messageKey]}</Text>
@@ -282,8 +298,12 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
       </View>
 
       <View style={styles.opponentSection}>
+        <Image
+          source={opponent.avatar ? { uri: opponent.avatar } : placeholderAvatar}
+          style={styles.opponentAvatar}
+        />
         <Text style={styles.opponentLabel}>
-          {t.opponent} {getFlagEmoji(opponent.countryCode || '')}
+          {t.opponent} {getFlagEmoji(opponent.countryCode || '') ?? '🏳️'}
         </Text>
         <Text style={styles.deckCount}>Cartes: {opponent.deck.length}</Text>
         <Card
@@ -307,7 +327,12 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
       </View>
 
       <View style={styles.playerSection}>
-        <TouchableOpacity onPress={handlePlayerPeek} activeOpacity={0.7}>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t.look_card}
+          onPress={handlePlayerPeek}
+          activeOpacity={0.7}
+        >
           <Card
             card={player.currentCard}
             isFaceUp={hasPeeked || phase !== GamePhase.WAITING}
@@ -339,7 +364,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#020617',
+    backgroundColor: theme.bg,
     paddingTop: 24,
     paddingHorizontal: 16,
   },
@@ -356,23 +381,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   statusBattle: {
-    color: '#F97316',
+    color: theme.battle,
   },
   statusWin: {
-    color: '#22C55E',
+    color: theme.win,
   },
   statusLoss: {
-    color: '#F87171',
+    color: theme.loss,
   },
   statusDefault: {
-    color: '#D4AF37',
+    color: theme.primary,
   },
   opponentSection: {
     alignItems: 'center',
     marginBottom: 24,
   },
+  opponentAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: 8,
+  },
   opponentLabel: {
-    color: '#9CA3AF',
+    color: theme.textMuted,
     marginBottom: 4,
   },
   deckCount: {
@@ -384,7 +415,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   potText: {
-    color: '#F97316',
+    color: theme.battle,
     fontWeight: '700',
   },
   playerSection: {
@@ -392,7 +423,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   playerLabel: {
-    color: '#D4AF37',
+    color: theme.primary,
     marginTop: 4,
   },
   controls: {
@@ -400,7 +431,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   helperText: {
-    color: '#9CA3AF',
+    color: theme.textMuted,
     textAlign: 'center',
   },
   fightText: {
@@ -408,14 +439,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   waitingText: {
-    color: '#9CA3AF',
+    color: theme.textMuted,
     textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#020617',
+    backgroundColor: theme.bg,
   },
   loadingText: {
     color: '#E5E7EB',
@@ -424,7 +455,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#020617',
+    backgroundColor: theme.bg,
     paddingHorizontal: 24,
   },
   gameOverEmoji: {
@@ -432,18 +463,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   gameOverTitle: {
-    color: '#D4AF37',
+    color: theme.primary,
     fontSize: 24,
     fontWeight: '800',
     marginBottom: 8,
   },
   gameOverSubtitle: {
-    color: '#9CA3AF',
+    color: theme.textMuted,
     marginBottom: 16,
   },
   gameOverCard: {
     width: '100%',
-    backgroundColor: '#030712',
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
@@ -454,7 +485,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   gameOverLabel: {
-    color: '#9CA3AF',
+    color: theme.textMuted,
   },
   gameOverValue: {
     color: '#E5E7EB',

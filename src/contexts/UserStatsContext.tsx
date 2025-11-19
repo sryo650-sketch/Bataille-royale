@@ -22,6 +22,7 @@ export interface UserStats {
   history: MatchRecord[];
   countryCode: string;
   gamesPlayed: number;
+  avatar?: string;
 }
 
 interface UserStatsContextType {
@@ -39,6 +40,7 @@ const defaultStats: UserStats = {
   history: [],
   countryCode: 'FR',
   gamesPlayed: 0,
+  avatar: undefined,
 };
 
 const STORAGE_KEY = 'royal_battles_stats';
