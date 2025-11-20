@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Vibration } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Vibration, Animated, Platform, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { CardData, GamePhase, Player, Screen } from '../types';
@@ -188,6 +189,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
     setRoundResult('WAR');
     setMessageKey('battle');
     setPhase(GamePhase.BATTLE);
+    Vibration.vibrate(100);
 
     setTimeout(() => {
       if (!player || !opponent || !player.currentCard || !opponent.currentCard) {
@@ -259,7 +261,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
     const didWin = player.deck.length > opponent.deck.length;
     return (
       <View style={styles.gameOverContainer}>
-        <Text style={styles.gameOverEmoji}>{didWin ? '👑' : '💀'}</Text>
+        <Text style={styles.gameOverEmoji}>{didWin ? '­ƒææ' : '­ƒÆÇ'}</Text>
         <Text style={styles.gameOverTitle}>{didWin ? t.victory : t.defeat}</Text>
         <Text style={styles.gameOverSubtitle}>{didWin ? t.won_all : t.lost_all}</Text>
         <View style={styles.gameOverCard}>
@@ -272,7 +274,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
           <View style={styles.gameOverRow}>
             <Text style={styles.gameOverLabel}>Adversaire</Text>
             <Text style={styles.gameOverValue}>
-              {opponent.name} {getFlagEmoji(opponent.countryCode || '') ?? '🏳️'}
+              {opponent.name} {getFlagEmoji(opponent.countryCode || '') ?? '­ƒÅ│´©Å'}
             </Text>
           </View>
         </View>
@@ -303,7 +305,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onNavigate }) => {
           style={styles.opponentAvatar}
         />
         <Text style={styles.opponentLabel}>
-          {t.opponent} {getFlagEmoji(opponent.countryCode || '') ?? '🏳️'}
+          {t.opponent} {getFlagEmoji(opponent.countryCode || '') ?? '­ƒÅ│´©Å'}
         </Text>
         <Text style={styles.deckCount}>Cartes: {opponent.deck.length}</Text>
         <Card

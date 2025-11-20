@@ -41,6 +41,7 @@ export enum Screen {
   GAME = 'GAME',
   STATS = 'STATS',
   CHALLENGE = 'CHALLENGE',
+  PROFILE = 'PROFILE',
 }
 
 export type GameMode = 'classic' | 'rapid' | 'daily';

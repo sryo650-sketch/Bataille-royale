@@ -23,11 +23,19 @@ export interface UserStats {
   countryCode: string;
   gamesPlayed: number;
   avatar?: string;
+  playerName: string;
 }
+
+type UpdateProfilePayload = {
+  playerName?: string;
+  countryCode?: string;
+  avatar?: string;
+};
 
 interface UserStatsContextType {
   stats: UserStats;
   recordGame: (result: 'WIN' | 'LOSS', opponentName: string, opponentCountry: string) => void;
+  updateProfile: (profile: UpdateProfilePayload) => void;
 }
 
 const defaultStats: UserStats = {
@@ -41,6 +49,7 @@ const defaultStats: UserStats = {
   countryCode: 'FR',
   gamesPlayed: 0,
   avatar: undefined,
+  playerName: 'Capitaine',
 };
 
 const STORAGE_KEY = 'royal_battles_stats';
@@ -56,7 +65,13 @@ export const UserStatsProvider: React.FC<{ children: ReactNode }> = ({ children 
       try {
         const saved = await AsyncStorage.getItem(STORAGE_KEY);
         if (saved && isMounted) {
-          setStats(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          setStats(prev => ({
+            ...prev,
+            ...parsed,
+            playerName: parsed.playerName ?? prev.playerName,
+            countryCode: parsed.countryCode ?? prev.countryCode,
+          }));
         } else if (isMounted) {
           setStats(prev => ({ ...prev, countryCode: detectUserCountry() }));
         }
@@ -109,8 +124,17 @@ export const UserStatsProvider: React.FC<{ children: ReactNode }> = ({ children 
     });
   };
 
+  const updateProfile = ({ playerName, countryCode, avatar }: UpdateProfilePayload) => {
+    setStats(prev => ({
+      ...prev,
+      playerName: playerName ?? prev.playerName,
+      countryCode: countryCode ?? prev.countryCode,
+      avatar: avatar !== undefined ? avatar : prev.avatar,
+    }));
+  };
+
   return (
-    <UserStatsContext.Provider value={{ stats, recordGame }}>
+    <UserStatsContext.Provider value={{ stats, recordGame, updateProfile }}>
       {children}
     </UserStatsContext.Provider>
   );

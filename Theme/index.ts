@@ -1,0 +1,1 @@
+export { COLORS, CARD, SPACING, palette, type Theme } from '../src/theme';
