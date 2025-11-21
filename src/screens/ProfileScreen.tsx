@@ -8,12 +8,14 @@ import {
   Platform,
   ScrollView,
   Image,
+  Alert,
 } from 'react-native';
 import { Screen } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUserStats } from '../contexts/UserStatsContext';
 import { Button } from '../components/Button';
 import { getFlagEmoji } from '../utils/countryUtils';
+import { getUserData, updateUserData, UserData } from '../utils/onboardingUtils';
 
 interface ProfileScreenProps {
   onNavigate: (screen: Screen) => void;
@@ -25,29 +27,63 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
   const { t } = useLanguage();
   const { stats, updateProfile } = useUserStats();
 
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [playerName, setPlayerName] = useState(stats.playerName ?? '');
   const [countryCode, setCountryCode] = useState(stats.countryCode ?? '');
   const [avatarUrl, setAvatarUrl] = useState(stats.avatar ?? '');
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   useEffect(() => {
-    setPlayerName(stats.playerName ?? '');
-    setCountryCode(stats.countryCode ?? '');
-    setAvatarUrl(stats.avatar ?? '');
-  }, [stats.playerName, stats.countryCode, stats.avatar]);
+    const loadUserData = async () => {
+      const data = await getUserData();
+      setUserData(data);
+      if (data) {
+        setPlayerName(data.username);
+        setCountryCode(data.countryCode);
+        setAvatarUrl(data.avatar || '');
+      }
+    };
+    loadUserData();
+  }, []);
 
-  const handleSave = () => {
-    if (!playerName.trim()) {
+  useEffect(() => {
+    if (!userData) {
+      setPlayerName(stats.playerName ?? '');
+      setCountryCode(stats.countryCode ?? '');
+      setAvatarUrl(stats.avatar ?? '');
+    }
+  }, [stats.playerName, stats.countryCode, stats.avatar, userData]);
+
+  const handleSave = async () => {
+    if (!countryCode.trim()) {
+      Alert.alert('Erreur', 'Le code pays est requis');
       return;
     }
+    
     setStatus('saving');
-    updateProfile({
-      playerName: playerName.trim(),
-      countryCode: countryCode.trim(),
-      avatar: avatarUrl.trim() || undefined,
-    });
-    setTimeout(() => setStatus('saved'), 200);
-    setTimeout(() => setStatus('idle'), 2000);
+    
+    try {
+      // Mettre à jour les données d'onboarding si elles existent
+      if (userData) {
+        await updateUserData({
+          countryCode: countryCode.trim().toUpperCase(),
+          avatar: avatarUrl.trim() || undefined,
+        });
+      }
+      
+      // Mettre à jour aussi les stats du jeu
+      updateProfile({
+        playerName: playerName.trim(),
+        countryCode: countryCode.trim(),
+        avatar: avatarUrl.trim() || undefined,
+      });
+      
+      setStatus('saved');
+      setTimeout(() => setStatus('idle'), 2000);
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de sauvegarder les modifications');
+      setStatus('idle');
+    }
   };
 
   const currentFlag = getFlagEmoji(countryCode) ?? '🏳️';
@@ -78,16 +114,37 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
           </View>
         </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>{t.player_name}</Text>
-          <TextInput
-            value={playerName}
-            onChangeText={setPlayerName}
-            placeholder={stats.playerName}
-            placeholderTextColor="#6B7280"
-            style={styles.input}
-          />
-        </View>
+        {userData && (
+          <>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Pseudo</Text>
+              <View style={[styles.input, styles.inputDisabled]}>
+                <Text style={styles.inputDisabledText}>{userData.username}</Text>
+              </View>
+              <Text style={styles.hint}>⚠️ Le pseudo ne peut pas être modifié</Text>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Email</Text>
+              <View style={[styles.input, styles.inputDisabled]}>
+                <Text style={styles.inputDisabledText}>{userData.email}</Text>
+              </View>
+            </View>
+          </>
+        )}
+
+        {!userData && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>{t.player_name}</Text>
+            <TextInput
+              value={playerName}
+              onChangeText={setPlayerName}
+              placeholder={stats.playerName}
+              placeholderTextColor="#6B7280"
+              style={styles.input}
+            />
+          </View>
+        )}
 
         <View style={styles.formGroup}>
           <Text style={styles.label}>{t.country_code}</Text>
@@ -206,6 +263,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#1F2937',
+  },
+  inputDisabled: {
+    backgroundColor: '#1F2937',
+    borderColor: '#374151',
+    justifyContent: 'center',
+  },
+  inputDisabledText: {
+    color: '#9CA3AF',
+    fontSize: 14,
+  },
+  hint: {
+    color: '#F59E0B',
+    fontSize: 12,
+    marginTop: 4,
   },
   saveText: {
     color: '#020617',

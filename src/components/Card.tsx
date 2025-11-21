@@ -1,223 +1,267 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ViewStyle, Image, Animated } from 'react-native';
+import React, { useEffect, useRef, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ViewStyle,
+  Image,
+  Animated,
+  StyleProp,
+  ImageSourcePropType,
+  Platform,
+} from 'react-native';
 import { CardData, Suit, Rank } from '../types';
 import { SUIT_COLORS, RANK_LABELS } from '../constants';
 
-const cardBack = require('../../assets/back_002.png');
+// Typage explicite de l'asset pour éviter les erreurs TS
+const cardBack: ImageSourcePropType = require('../../assets/back_002.png');
+
+type CardSize = 'sm' | 'md' | 'lg';
 
 interface CardProps {
   card?: CardData;
   isFaceUp: boolean;
   isWinning?: boolean;
   isLosing?: boolean;
-  size?: 'sm' | 'md' | 'lg';
-  style?: ViewStyle;
+  size?: CardSize;
+  style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
 }
 
-export const Card: React.FC<CardProps> = ({
+export const Card: React.FC<CardProps> = React.memo(({
   card,
   isFaceUp,
   isWinning,
   isLosing,
   size = 'lg',
   style,
+  accessibilityLabel,
 }) => {
-  const sizeStyle = size === 'sm' ? styles.sm : size === 'md' ? styles.md : styles.lg;
+  // 1. MÉMOÏSATION metrics
+  const { width, height, fontSizes } = useMemo(() => getCardMetrics(size), [size]);
+  
+  const borderColor = useMemo(() => {
+    if (isWinning) return '#10B981'; // Emerald-500
+    if (isLosing) return '#EF4444'; // Red-500
+    return '#D4AF37'; // Gold
+  }, [isWinning, isLosing]);
 
-  if (!card) {
-    return <View style={[styles.placeholder, sizeStyle, style]} />;
-  }
+  const suitColor = useMemo(() => getSuitColor(card?.suit, card?.rank), [card?.suit, card?.rank]);
 
-  const borderColor = isWinning
-    ? '#10B981'
-    : isLosing
-    ? '#EF4444'
-    : '#D4AF37';
-
+  // 2. ANIMATION
+  // Initialisation directe à la bonne valeur. Pas besoin de useEffect de reset.
   const rotation = useRef(new Animated.Value(isFaceUp ? 0 : 180)).current;
-  const suitColor = getSuitColor(card.suit);
 
   useEffect(() => {
     Animated.timing(rotation, {
       toValue: isFaceUp ? 0 : 180,
-      duration: 320,
-      useNativeDriver: true,
+      duration: 400, // Un poil plus lent pour apprécier le 3D
+      useNativeDriver: true, // Indispensable pour 60fps
     }).start();
-  }, [isFaceUp, rotation]);
+  }, [isFaceUp]);
 
-  const frontAnimatedStyle = {
+  // 3. INTERPOLATIONS (La clé du flip 3D)
+  const frontAnimatedStyle = useMemo(() => ({
+    zIndex: isFaceUp ? 1 : 0, // Aide pour le clic sur iOS parfois
     opacity: rotation.interpolate({
       inputRange: [0, 89, 90],
-      outputRange: [1, 1, 0],
+      outputRange: [1, 1, 0], // Disparaît pile à 90°
     }),
     transform: [
-      { perspective: 800 },
+      { perspective: 1000 }, // Perspective plus profonde pour plus de réalisme
       {
-        rotateY: rotation.interpolate({ inputRange: [0, 180], outputRange: ['0deg', '180deg'] }),
+        rotateY: rotation.interpolate({
+          inputRange: [0, 180],
+          outputRange: ['0deg', '180deg'],
+        }),
       },
     ],
-  } as const;
+  }), [isFaceUp]); // Ajout isFaceUp en dépendance pour le zIndex
 
-  const backAnimatedStyle = {
+  const backAnimatedStyle = useMemo(() => ({
+    zIndex: isFaceUp ? 0 : 1,
     opacity: rotation.interpolate({
       inputRange: [90, 91, 180],
-      outputRange: [0, 1, 1],
+      outputRange: [0, 1, 1], // Apparaît pile après 90°
     }),
     transform: [
-      { perspective: 800 },
+      { perspective: 1000 },
       {
-        rotateY: rotation.interpolate({ inputRange: [0, 180], outputRange: ['180deg', '360deg'] }),
+        rotateY: rotation.interpolate({
+          inputRange: [0, 180],
+          outputRange: ['180deg', '360deg'],
+        }),
       },
     ],
-  } as const;
+  }), [isFaceUp]);
+
+  // 4. RENDU (Optimisation structurelle)
+  const containerStyle = useMemo(() => [
+    styles.card, 
+    { width, height, borderColor }, 
+    style
+  ], [width, height, borderColor, style]);
+
+  // Gestion état vide
+  if (!card) {
+    return (
+      <View
+        style={[styles.placeholder, { width, height }, style]}
+        accessible={true}
+        accessibilityLabel="Emplacement vide"
+      />
+    );
+  }
 
   return (
-    <View style={[styles.card, sizeStyle, { borderColor }, style]}>
-      <Animated.View style={[styles.face, styles.faceFront, frontAnimatedStyle]}>
+    <Animated.View
+      style={containerStyle}
+      accessible={true}
+      accessibilityLabel={accessibilityLabel || `Carte ${getRankLabel(card.rank)} de ${card.suit}`}
+    >
+      {/* --- RECTO --- */}
+      <Animated.View style={[styles.face, styles.faceFront, frontAnimatedStyle]} pointerEvents="none">
         <View style={styles.frontSurface}>
           <View style={styles.content}>
-            <View style={styles.cornerTop}>
-              <Text style={[styles.rank, { color: suitColor }]}>
+            {/* Coin Haut Gauche */}
+            <View style={[styles.corner, styles.cornerTop]}>
+              <Text style={[styles.rank, { color: suitColor, fontSize: fontSizes.rank }]}>
                 {getRankLabel(card.rank)}
               </Text>
-              <Text style={[styles.suitSmall, { color: suitColor }]}>
+              <Text style={[styles.suitSmall, { color: suitColor, fontSize: fontSizes.suitSmall }]}>
                 {card.suit}
               </Text>
             </View>
+            
+            {/* Centre */}
             <View style={styles.center}>
-              <Text style={[styles.suitBig, { color: suitColor }]}>
+              <Text style={[styles.suitBig, { color: suitColor, fontSize: fontSizes.suitBig }]}>
                 {card.suit}
               </Text>
             </View>
-            <View style={styles.cornerBottom}>
-              <Text style={[styles.rank, { color: suitColor }]}>
+            
+            {/* Coin Bas Droit */}
+            <View style={[styles.corner, styles.cornerBottom]}>
+              <Text style={[styles.rank, { color: suitColor, fontSize: fontSizes.rank }]}>
                 {getRankLabel(card.rank)}
               </Text>
-              <Text style={[styles.suitSmall, { color: suitColor }]}>
+              <Text style={[styles.suitSmall, { color: suitColor, fontSize: fontSizes.suitSmall }]}>
                 {card.suit}
               </Text>
             </View>
           </View>
         </View>
       </Animated.View>
-      <Animated.View style={[styles.face, styles.faceBack, backAnimatedStyle]}>
+
+      {/* --- VERSO --- */}
+      <Animated.View style={[styles.face, styles.faceBack, backAnimatedStyle]} pointerEvents="none">
         <View style={styles.backFrame}>
-          <View style={styles.backContent}>
-            <Image source={cardBack} style={styles.backImage} resizeMode="cover" />
-          </View>
+          <Image source={cardBack} style={styles.backImage} resizeMode="cover" />
         </View>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
+});
+
+// --- UTILITAIRES ---
+const getCardMetrics = (size: CardSize) => {
+  // Ajustement des ratios pour être plus proche d'une vraie carte de poker (2.5 x 3.5 pouces)
+  // Ratio standard ~1.4
+  const metrics = {
+    sm: { width: 60, height: 84, fontSizes: { rank: 12, suitSmall: 10, suitBig: 20 } },
+    md: { width: 90, height: 126, fontSizes: { rank: 16, suitSmall: 12, suitBig: 30 } },
+    lg: { width: 120, height: 168, fontSizes: { rank: 20, suitSmall: 14, suitBig: 40 } },
+  };
+  return metrics[size];
 };
 
-const getRankLabel = (rank: Rank): string => {
-  return RANK_LABELS[rank];
-};
+const getRankLabel = (rank: Rank): string => RANK_LABELS[rank] || '?';
 
-const getSuitColor = (suit: Suit) => {
-  if (suit === Suit.CLUBS || suit === Suit.SPADES) {
-    return '#111827';
+const getSuitColor = (suit?: Suit, rank?: Rank) => {
+  // Cartes fortes (V, D, R, As) en OR
+  if (rank && [Rank.JACK, Rank.QUEEN, Rank.KING, Rank.ACE].includes(rank)) {
+    return '#D4AF37'; // Or
   }
-  return SUIT_COLORS[suit];
+  
+  if (!suit) return '#111827';
+  // Utilisation de constantes globales ou fallback
+  return SUIT_COLORS[suit] || '#111827';
 };
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 2,
-    borderRadius: 16,
-    overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: '#0C1120',
-  },
-  sm: {
-    width: 64,
-    height: 96,
-  },
-  md: {
-    width: 96,
-    height: 144,
-  },
-  lg: {
-    width: 128,
-    height: 192,
+    borderWidth: 2, // Attention: borderWidth compte dans la taille sur RN. 
+    borderRadius: 12,
+    backgroundColor: 'transparent', // Important pour que l'animation 3D soit propre
+    // Pas d'overflow hidden ici si on veut des effets d'ombre externes, 
+    // mais pour une carte simple c'est ok.
   },
   placeholder: {
     borderWidth: 2,
-    borderColor: '#374151',
-    borderRadius: 16,
-    backgroundColor: 'transparent',
+    borderColor: '#374151', // Gris foncé
+    borderRadius: 12,
+    borderStyle: 'dashed', // Joli effet pour un emplacement vide
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   face: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backfaceVisibility: 'hidden',
-    borderRadius: 16,
+    ...StyleSheet.absoluteFillObject, // Remplace top/left/right/bottom: 0
+    borderRadius: 10, // Un peu moins que le parent pour le border
+    overflow: 'hidden',
+    // backfaceVisibility supprimé pour compatibilité Android avec l'opacité
   },
   faceFront: {
-    padding: 6,
-    backgroundColor: 'transparent',
+    backgroundColor: '#FFFFFF',
   },
   faceBack: {
-    padding: 6,
+    backgroundColor: '#0C1120',
   },
   frontSurface: {
     flex: 1,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    position: 'relative',
-    padding: 8,
+    padding: 4,
   },
   content: {
     flex: 1,
+    justifyContent: 'space-between',
   },
   backFrame: {
     flex: 1,
-    width: '100%',
-    height: '100%',
-    padding: 6,
-    backgroundColor: '#0C1120',
-    borderRadius: 14,
-  },
-  backContent: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
-    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a', // Fond de sécurité si l'image charge pas
   },
   backImage: {
     width: '100%',
     height: '100%',
   },
-  cornerTop: {
+  corner: {
     position: 'absolute',
-    top: 8,
-    left: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    width: 30, // Fixe une largeur pour éviter le décalage
+  },
+  cornerTop: {
+    top: 4,
+    left: 4,
   },
   cornerBottom: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    alignItems: 'center',
+    bottom: 4,
+    right: 4,
     transform: [{ rotate: '180deg' }],
-  },
-  rank: {
-    fontWeight: '700',
-  },
-  suitSmall: {
-    fontSize: 12,
-  },
-  suitBig: {
-    fontSize: 40,
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  rank: {
+    fontWeight: '800', // Plus gras pour lisibilité
+    textAlign: 'center',
+    includeFontPadding: false, // Fix alignement vertical Android
+  },
+  suitSmall: {
+    marginTop: -2, // Resserre un peu rank/suit
+  },
+  suitBig: {
+    includeFontPadding: false,
   },
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ViewStyle, Image } from 'react-native';
 import { COLORS, CARD, SPACING } from '../theme';
 
 export type PlayingCardSuit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
@@ -60,17 +60,11 @@ const PlayingCardComponent: React.FC<PlayingCardProps> = ({
   if (variant === 'back') {
     return (
       <View style={baseStyle}>
-        <View style={styles.cardBackInner}>
-          <View style={styles.patternGrid}>
-            {Array.from({ length: 16 }).map((_, index) => (
-              <View key={`dot-${index}`} style={styles.patternDot} />
-            ))}
-          </View>
-          <View style={styles.scepterContainer}>
-            <View style={styles.scepterStick} />
-            <View style={styles.scepterHead} />
-          </View>
-        </View>
+        <Image
+          source={require('../../assets/back_002.png')}
+          style={styles.cardBackImage}
+          resizeMode="cover"
+        />
       </View>
     );
   }
@@ -160,45 +154,10 @@ const styles = StyleSheet.create({
   highlighted: {
     shadowOpacity: 0.6,
   },
-  cardBackInner: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-    padding: SPACING.m,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  patternGrid: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: SPACING.m,
-    justifyContent: 'space-between',
-    alignContent: 'space-between',
-  },
-  patternDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    margin: 4,
-  },
-  scepterContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scepterStick: {
-    width: 8,
-    height: 80,
-    borderRadius: 4,
-    backgroundColor: COLORS.gold,
-  },
-  scepterHead: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.gold,
-    position: 'absolute',
-    top: -18,
+  cardBackImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: CARD.borderRadius,
   },
   cornerTopLeft: {
     position: 'absolute',

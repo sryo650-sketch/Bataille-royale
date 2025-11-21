@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useUserStats } from '../contexts/UserStatsContext';
 import { getFlagEmoji } from '../utils/countryUtils';
 import { Button } from '../components/Button';
+import { TierBadge } from '../components/TierBadge';
 import { COUNTRY_LEADERBOARDS, GLOBAL_LEADERBOARD, LeaderboardEntry } from '../constants';
 
 interface StatsScreenProps {
@@ -19,6 +20,10 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onNavigate }) => {
     ? Math.round((stats.wins / stats.gamesPlayed) * 100)
     : 0;
 
+  // Calcul du rang basé sur l'ELO (formule approximative)
+  // 1500 ELO = ~50000e rang, 2000 ELO = ~1000e rang, 2500+ = top 100
+  const estimatedRank = Math.max(1, Math.floor(Math.pow(10, 6 - (stats.elo / 500))));
+
   const countryLeaderboard: LeaderboardEntry[] =
     COUNTRY_LEADERBOARDS[stats.countryCode] ?? [];
 
@@ -30,7 +35,6 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onNavigate }) => {
         <Button
           size="sm"
           variant="ghost"
-          accessibilityRole="button"
           accessibilityLabel={t.return_menu}
           onPress={() => onNavigate(Screen.HOME)}
         >
@@ -55,8 +59,8 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onNavigate }) => {
           </View>
           <View style={styles.rankInfo}>
             <Text style={styles.rankLabel}>{t.current_rank}</Text>
+            <TierBadge rank={estimatedRank} showRankNumber={true} />
             <Text style={styles.rankValue}>{stats.elo} ELO</Text>
-            <Text style={styles.rankSub}>{t.top_percent}</Text>
           </View>
         </View>
 
@@ -109,23 +113,23 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onNavigate }) => {
           <TouchableOpacity onPress={vibrateSection} activeOpacity={0.7}>
             <Text style={styles.sectionTitle}>{t.global_leaderboard}</Text>
           </TouchableOpacity>
-          {GLOBAL_LEADERBOARD.map(entry => (
+          {GLOBAL_LEADERBOARD.map((entry, index) => (
             <View key={entry.id} style={styles.leaderboardRow}>
               <View style={styles.leaderboardLeft}>
                 <View
                   style={[styles.rankBadge, {
-                    backgroundColor: getRankColor(GLOBAL_LEADERBOARD.findIndex(e => e.id === entry.id)),
+                    backgroundColor: getRankColor(index),
                   }]}
                 >
                   <Text style={styles.rankBadgeText}>
-                    {GLOBAL_LEADERBOARD.findIndex(e => e.id === entry.id) + 1}
+                    {index + 1}
                   </Text>
                 </View>
-                <View>
-                  <Text style={styles.leaderboardName}>{entry.name}</Text>
-                  <Text style={styles.leaderboardCountry}>
-                    {getFlagEmoji(entry.countryCode)}
+                <View style={styles.leaderboardInfo}>
+                  <Text style={styles.leaderboardName}>
+                    {entry.name} {getFlagEmoji(entry.countryCode)}
                   </Text>
+                  <TierBadge rank={index + 1} showRankNumber={false} />
                 </View>
               </View>
               <View style={styles.leaderboardRight}>
@@ -145,23 +149,23 @@ export const StatsScreen: React.FC<StatsScreenProps> = ({ onNavigate }) => {
           {countryLeaderboard.length === 0 ? (
             <Text style={styles.emptyHistory}>{t.no_country_leaderboard}</Text>
           ) : (
-            countryLeaderboard.map(entry => (
+            countryLeaderboard.map((entry, index) => (
               <View key={entry.id} style={styles.leaderboardRow}>
                 <View style={styles.leaderboardLeft}>
                   <View
                     style={[styles.rankBadge, {
-                      backgroundColor: getRankColor(countryLeaderboard.findIndex(e => e.id === entry.id)),
+                      backgroundColor: getRankColor(index),
                     }]}
                   >
                     <Text style={styles.rankBadgeText}>
-                      {countryLeaderboard.findIndex(e => e.id === entry.id) + 1}
+                      {index + 1}
                     </Text>
                   </View>
-                  <View>
-                    <Text style={styles.leaderboardName}>{entry.name}</Text>
-                    <Text style={styles.leaderboardCountry}>
-                      {getFlagEmoji(entry.countryCode)}
+                  <View style={styles.leaderboardInfo}>
+                    <Text style={styles.leaderboardName}>
+                      {entry.name} {getFlagEmoji(entry.countryCode)}
                     </Text>
+                    <TierBadge rank={index + 1} showRankNumber={false} />
                   </View>
                 </View>
                 <View style={styles.leaderboardRight}>
@@ -422,6 +426,7 @@ const styles = StyleSheet.create({
   leaderboardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   rankBadge: {
     width: 32,
@@ -435,9 +440,13 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: '700',
   },
+  leaderboardInfo: {
+    flex: 1,
+  },
   leaderboardName: {
     color: '#FFFFFF',
     fontWeight: '700',
+    marginBottom: 4,
   },
   leaderboardCountry: {
     color: theme.muted,

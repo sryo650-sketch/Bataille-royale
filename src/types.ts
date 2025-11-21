@@ -57,6 +57,12 @@ export interface ChallengeOpponent {
 export interface GameConfig {
   mode: GameMode;
   opponent?: ChallengeOpponent;
+  metadata?: {
+    story?: string;
+    objective?: string;
+    reward?: string;
+    script?: string[];
+  };
 }
 
 export type NavigationHandler = (screen: Screen, options?: { gameConfig?: GameConfig }) => void;

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { detectUserCountry } from '../utils/countryUtils';
+import { getUserData } from '../utils/onboardingUtils';
 
 export interface MatchRecord {
   id: string;
@@ -19,6 +20,7 @@ export interface UserStats {
   currentStreak: number;
   bestStreak: number;
   totalCardsWon: number;
+  totalChargesEarned: number;
   history: MatchRecord[];
   countryCode: string;
   gamesPlayed: number;
@@ -30,6 +32,7 @@ type UpdateProfilePayload = {
   playerName?: string;
   countryCode?: string;
   avatar?: string;
+  totalChargesEarned?: number;
 };
 
 interface UserStatsContextType {
@@ -45,6 +48,7 @@ const defaultStats: UserStats = {
   currentStreak: 0,
   bestStreak: 0,
   totalCardsWon: 0,
+  totalChargesEarned: 0,
   history: [],
   countryCode: 'FR',
   gamesPlayed: 0,
@@ -63,17 +67,29 @@ export const UserStatsProvider: React.FC<{ children: ReactNode }> = ({ children 
     let isMounted = true;
     const load = async () => {
       try {
+        // Charger les données d'onboarding en priorité
+        const onboardingData = await getUserData();
+        
+        // Charger les stats du jeu
         const saved = await AsyncStorage.getItem(STORAGE_KEY);
         if (saved && isMounted) {
           const parsed = JSON.parse(saved);
           setStats(prev => ({
             ...prev,
             ...parsed,
-            playerName: parsed.playerName ?? prev.playerName,
-            countryCode: parsed.countryCode ?? prev.countryCode,
+            // Utiliser les données d'onboarding si disponibles
+            playerName: onboardingData?.username ?? parsed.playerName ?? prev.playerName,
+            countryCode: onboardingData?.countryCode ?? parsed.countryCode ?? prev.countryCode,
+            avatar: onboardingData?.avatar ?? parsed.avatar ?? prev.avatar,
           }));
         } else if (isMounted) {
-          setStats(prev => ({ ...prev, countryCode: detectUserCountry() }));
+          // Pas de stats sauvegardées, utiliser onboarding + détection pays
+          setStats(prev => ({
+            ...prev,
+            playerName: onboardingData?.username ?? prev.playerName,
+            countryCode: onboardingData?.countryCode ?? detectUserCountry(),
+            avatar: onboardingData?.avatar ?? prev.avatar,
+          }));
         }
       } catch {
       }

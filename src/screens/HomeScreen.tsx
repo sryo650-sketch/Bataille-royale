@@ -1,13 +1,17 @@
 // src/screens/HomeScreen.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+
+import Animated, {
+  FadeInDown,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '../components/Button';
 import { MOCK_FRIENDS, MOCK_RANDOM_PLAYERS } from '../constants';
@@ -21,6 +25,13 @@ import { getFlagEmoji } from '../utils/countryUtils';
 const placeholderAvatar = require('../assets/placeholder.png');
 const LANGUAGE_STORAGE_KEY = 'userLang';
 
+const formatCharges = (charges: number): string => {
+  if (charges < 1000) return charges.toString();
+  if (charges < 10000) return `${Math.floor(charges / 1000)}K+`;
+  if (charges < 100000) return `${Math.floor(charges / 1000)}K+`;
+  return `${Math.floor(charges / 1000000)}M+`;
+};
+
 interface HomeScreenProps {
   onNavigate: NavigationHandler;
 }
@@ -32,6 +43,7 @@ type ModeOption = {
   accent: string;
   background: string;
   cta: string;
+  badge?: string;
 };
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
@@ -42,6 +54,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const colors = useThemeColor();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const themeToggleLabel = language === 'fr' ? 'Changer de thème' : 'Toggle theme';
+  const scrollY = useSharedValue(0);
+  const pulse = useSharedValue(1);
 
   useEffect(() => {
     const loadLanguagePreference = async () => {
@@ -63,6 +77,44 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
     AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newLanguage).catch(() => undefined);
   };
 
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.04, { duration: 1200 }),
+        withTiming(0.96, { duration: 1200 })
+      ),
+      -1,
+      true
+    );
+  }, [pulse]);
+
+  const scrollHandler = useAnimatedScrollHandler(event => {
+    scrollY.value = event.contentOffset.y;
+  });
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const clamp = Math.min(scrollY.value / 80, 1);
+    return {
+      transform: [{ translateY: -clamp * 10 }],
+      opacity: 1 - clamp * 0.3,
+    };
+  });
+
+  const heroAnimatedStyle = useAnimatedStyle(() => {
+    const clamp = Math.max(0, 1 - scrollY.value / 250);
+    return {
+      transform: [
+        { translateY: -scrollY.value * 0.15 },
+        { scale: 0.9 + 0.1 * clamp },
+      ],
+      opacity: 0.6 + 0.4 * clamp,
+    };
+  });
+
+  const ctaAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+  }));
+
   const modeOptions: ModeOption[] = useMemo(
     () => [
       {
@@ -72,6 +124,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         accent: colors.gold,
         background: colors.surface,
         cta: t.play,
+        badge: t.ranked_mode_badge,
       },
       {
         key: 'rapid',
@@ -111,17 +164,39 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
     onNavigate(Screen.GAME, { gameConfig: config });
   };
 
+  const handleDuel = (name: string, countryCode?: string, avatar?: string) => {
+    const config: GameConfig = {
+      mode: 'rapid',
+      opponent: {
+        id: `duel-${name}-${Date.now()}`,
+        name,
+        countryCode: countryCode ?? 'FR',
+        avatar,
+      },
+    };
+    onNavigate(Screen.GAME, { gameConfig: config });
+  };
+
   return (
     <View style={styles.screen}>
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
       >
-        <View style={styles.headerRow}>
-          <View style={styles.streakBadge}>
-            <Text style={styles.streakValue}>{stats.currentStreak}</Text>
-            <Text style={styles.streakLabel}>{t.streak}</Text>
+        <Animated.View style={[styles.headerRow, headerAnimatedStyle]}>
+          <View style={styles.leftBadges}>
+            <View style={styles.streakBadge}>
+              <Text style={styles.streakValue}>{stats.currentStreak}</Text>
+              <Text style={styles.streakLabel}>{t.streak}</Text>
+            </View>
+            <View style={styles.chargesBadge}>
+              <Text style={styles.chargesValue}>
+                {formatCharges(stats.totalChargesEarned || 0)}⚡
+              </Text>
+            </View>
           </View>
           <View style={styles.headerRight}>
             <TouchableOpacity
@@ -159,141 +234,179 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
               </View>
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.hero}>
+        <Animated.View style={[styles.hero, heroAnimatedStyle]}>
           <Text style={styles.heroTitle}>PUGNA REGALIS</Text>
           <Text style={styles.heroSubtitle}>Edition Royale</Text>
-        </View>
+        </Animated.View>
 
         <View style={styles.modesSection}>
           {modeOptions.map((option, i) => (
-            <TouchableOpacity
-              key={option.key}
-              activeOpacity={0.9}
-              style={[
-                styles.modeCard,
-                {
-                  backgroundColor: option.background,
-                  borderColor: option.accent,
-                },
-                selectedMode === option.key && styles.modeCardActive,
-              ]}
-              onPress={() => setSelectedMode(option.key)}
-            >
-              <View style={styles.modeCardHeader}>
-                <Text style={styles.modeCardTitle}>{option.title}</Text>
-                {selectedMode === option.key && (
-                  <Text style={styles.modeCardBadge}>{t.ready}</Text>
+            <Animated.View key={option.key} entering={FadeInDown.delay(i * 80)}>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                style={[
+                  styles.modeCard,
+                  {
+                    backgroundColor: option.background,
+                    borderColor: selectedMode === option.key ? option.accent : 'transparent',
+                  },
+                  selectedMode === option.key && styles.modeCardActive,
+                ]}
+                onPress={() => setSelectedMode(option.key)}
+              >
+                <View style={styles.modeCardHeader}>
+                  <Text style={styles.modeCardTitle}>{option.title}</Text>
+                  {selectedMode === option.key && (
+                    <Text style={styles.modeCardBadge}>✓</Text>
+                  )}
+                </View>
+                {option.badge && (
+                  <View style={styles.modeInfoBadge}>
+                    <Text style={styles.modeInfoBadgeText}>{option.badge}</Text>
+                  </View>
                 )}
-              </View>
-              <Text style={styles.modeCardDescription}>{option.description}</Text>
-              <View style={styles.modeCardFooter}>
-                <Text style={styles.modeCardCTA}>{option.cta}</Text>
-              </View>
-            </TouchableOpacity>
+                <Text style={styles.modeCardDescription}>{option.description}</Text>
+                <View style={styles.modeCardFooter}>
+                  <Text style={[styles.modeCardCTA, { color: option.accent }]}>
+                    {option.cta}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
           ))}
-          <Button onPress={handlePlay} size="lg" fullWidth>
-            <Text style={styles.playText}>
-              {selectedMode === 'rapid' ? t.start_duel : t.play}
-            </Text>
-          </Button>
+          <Animated.View style={[styles.playButtonWrapper, ctaAnimatedStyle]}>
+            <Button onPress={handlePlay} size="lg" fullWidth>
+              <Text style={styles.playText}>
+                {selectedMode === 'rapid' ? t.start_duel : t.play}
+              </Text>
+            </Button>
+          </Animated.View>
         </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t.friends_online}</Text>
           <Text style={styles.sectionAction}>{t.see_all}</Text>
         </View>
-        {MOCK_FRIENDS.map((friend) => (
-          <View
+        {MOCK_FRIENDS.map((friend, index) => (
+          <Animated.View
             key={friend.id}
-            style={[
-              styles.friendRow,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.surfaceAlt,
-              },
-            ]}
+            entering={FadeInDown.delay(200 + index * 70)}
+            style={{ width: '100%' }}
           >
-            <View style={styles.friendInfo}>
-              <Image
-                source={
-                  friend.avatar?.startsWith('http')
-                    ? { uri: friend.avatar }
-                    : placeholderAvatar
-                }
-                style={styles.friendAvatar}
-              />
-              <View>
-                <Text style={styles.friendName}>{friend.name}</Text>
-                <Text style={styles.friendStatus}>
-                  {friend.status === 'In Game'
-                    ? t.in_game
-                    : friend.status === 'Online'
-                    ? t.online
-                    : t.offline}
-                </Text>
+            <View
+              style={[
+                styles.friendRow,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.surfaceAlt,
+                },
+              ]}
+            >
+              <View style={styles.friendInfo}>
+                <Image
+                  source={
+                    friend.avatar?.startsWith('http')
+                      ? { uri: friend.avatar }
+                      : placeholderAvatar
+                  }
+                  style={styles.friendAvatar}
+                />
+                <View>
+                  <Text style={styles.friendName}>{friend.name}</Text>
+                  <Text style={styles.friendStatus}>
+                    {friend.status === 'In Game'
+                      ? t.in_game
+                      : friend.status === 'Online'
+                        ? t.online
+                        : t.offline}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.actionButtons}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onPress={() => handleDuel(friend.name, friend.countryCode, friend.avatar)}
+                >
+                  <Text style={styles.duelText}>{t.duel}</Text>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onPress={() => handleChallenge(friend.name, friend.countryCode, friend.avatar)}
+                >
+                  <Text style={styles.challengeText}>{t.challenge}</Text>
+                </Button>
               </View>
             </View>
-            <Button
-              size="sm"
-              variant="outline"
-              onPress={() => handleChallenge(friend.name, friend.countryCode, friend.avatar)}
-            >
-              <Text style={styles.challengeText}>{t.challenge}</Text>
-            </Button>
-          </View>
+          </Animated.View>
         ))}
         <View style={styles.sectionDivider} />
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t.random_encounters}</Text>
           <Text style={styles.sectionAction}>{t.refresh}</Text>
         </View>
-        {MOCK_RANDOM_PLAYERS.map((player) => (
-          <View
+        {MOCK_RANDOM_PLAYERS.map((player, index) => (
+          <Animated.View
             key={player.id}
-            style={[
-              styles.randomRow,
-              {
-                backgroundColor: colors.surfaceMuted,
-                borderColor: colors.surfaceAlt,
-              },
-            ]}
+            entering={FadeInDown.delay(400 + index * 70)}
+            style={{ width: '100%' }}
           >
-            <View style={styles.randomInfo}>
-              <Image
-                source={
-                  player.avatar?.startsWith('http')
-                    ? { uri: player.avatar }
-                    : placeholderAvatar
-                }
-                style={styles.randomAvatar}
-              />
-              <View>
-                <View style={styles.randomNameRow}>
-                  <Text style={styles.randomName}>{player.name}</Text>
-                  <Text style={styles.randomFlag}>
-                    {getFlagEmoji(player.countryCode) ?? '🏳️'}
+            <View
+              style={[
+                styles.randomRow,
+                {
+                  backgroundColor: colors.surfaceMuted,
+                  borderColor: colors.surfaceAlt,
+                },
+              ]}
+            >
+              <View style={styles.randomInfo}>
+                <Image
+                  source={
+                    player.avatar?.startsWith('http')
+                      ? { uri: player.avatar }
+                      : placeholderAvatar
+                  }
+                  style={styles.randomAvatar}
+                />
+                <View>
+                  <View style={styles.randomNameRow}>
+                    <Text style={styles.randomName}>{player.name}</Text>
+                    <Text style={styles.randomFlag}>
+                      {getFlagEmoji(player.countryCode) ?? '🏳️'}
+                    </Text>
+                  </View>
+                  <Text style={styles.randomMeta}>
+                    {`${player.mode} · ${player.timeAgo}`}
                   </Text>
                 </View>
-                <Text style={styles.randomMeta}>
-                  {`${player.mode} · ${player.timeAgo}`}
-                </Text>
+              </View>
+              <View style={styles.randomRight}>
+                <Text style={styles.randomElo}>{player.elo} ELO</Text>
+                <View style={styles.actionButtons}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPress={() => handleDuel(player.name, player.countryCode, player.avatar)}
+                  >
+                    <Text style={styles.duelText}>{t.duel}</Text>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPress={() => handleChallenge(player.name, player.countryCode, player.avatar)}
+                  >
+                    <Text style={styles.challengeText}>{t.challenge}</Text>
+                  </Button>
+                </View>
               </View>
             </View>
-            <View style={styles.randomRight}>
-              <Text style={styles.randomElo}>{player.elo} ELO</Text>
-              <Button
-                size="sm"
-                variant="outline"
-                onPress={() => handleChallenge(player.name, player.countryCode, player.avatar)}
-              >
-                <Text style={styles.challengeText}>{t.challenge}</Text>
-              </Button>
-            </View>
-          </View>
+          </Animated.View>
         ))}
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 };
@@ -308,17 +421,21 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
     },
     content: {
-      flex: 1,
       backgroundColor: colors.background,
       paddingHorizontal: 16,
       paddingTop: 24,
-      paddingBottom: 32,
+      paddingBottom: 48,
     },
     headerRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: 24,
+    },
+    leftBadges: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
     },
     streakBadge: {
       backgroundColor: colors.surfaceAlt,
@@ -334,6 +451,17 @@ const createStyles = (colors: ThemeColors) =>
     streakLabel: {
       color: colors.textSecondary,
       fontSize: 12,
+    },
+    chargesBadge: {
+      backgroundColor: colors.surfaceAlt,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 999,
+    },
+    chargesValue: {
+      color: '#FBBF24',
+      fontWeight: '900',
+      fontSize: 16,
     },
     headerRight: {
       flexDirection: 'row',
@@ -404,6 +532,9 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: 24,
       gap: 12,
     },
+    playButtonWrapper: {
+      marginTop: 4,
+    },
     modeCard: {
       borderWidth: 1,
       borderRadius: 20,
@@ -443,6 +574,22 @@ const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+    },
+    modeInfoBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: 'rgba(212, 175, 55, 0.12)',
+      borderColor: colors.gold,
+      borderWidth: 1,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 999,
+      marginBottom: 10,
+    },
+    modeInfoBadgeText: {
+      color: colors.gold,
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 0.5,
     },
     modeCardCTA: {
       fontWeight: '800',
@@ -507,6 +654,15 @@ const createStyles = (colors: ThemeColors) =>
     friendStatus: {
       color: colors.textSecondary,
       fontSize: 12,
+    },
+    actionButtons: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    duelText: {
+      color: '#F97316',
+      fontSize: 12,
+      fontWeight: '700',
     },
     challengeText: {
       color: colors.gold,

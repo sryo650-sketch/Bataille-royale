@@ -3,10 +3,10 @@ import { Rank, Suit } from './types';
 export const DECK_SIZE = 52;
 
 export const SUIT_COLORS: Record<Suit, string> = {
-  [Suit.HEARTS]: '#EF4444',
-  [Suit.DIAMONDS]: '#EF4444',
-  [Suit.CLUBS]: '#FFFFFF',
-  [Suit.SPADES]: '#FFFFFF',
+  [Suit.HEARTS]: '#EF4444',   // Rouge pour Cœur
+  [Suit.DIAMONDS]: '#EF4444', // Rouge pour Carreau
+  [Suit.CLUBS]: '#111827',    // Noir pour Trèfle
+  [Suit.SPADES]: '#111827',   // Noir pour Pique
 };
 
 export const RANK_LABELS: Record<Rank, string> = {
