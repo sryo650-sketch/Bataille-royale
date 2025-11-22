@@ -20,7 +20,7 @@ export interface PlayerState {
   timeoutCount: number; // Nombre de fois où le joueur n'a pas lock à temps
   hasMomentum: boolean; // Si true, le prochain bonus est gratuit
   hasCooldown: boolean; // Si true, impossible d'utiliser un bonus ce round (après Momentum)
-  maxPV: number; // PV max décroissant (26 au départ, réduit par le Kraken)
+  maxPV: number; // PV max décroissant (52 au départ, réduit par le Kraken)
   krakensCount: number; // Nombre de cartes retirées par le Kraken
 }
 

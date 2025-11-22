@@ -65,7 +65,7 @@ export const createGame = functions.https.onCall(
         timeoutCount: 0,
         hasMomentum: false,
         hasCooldown: false,
-        maxPV: 26,
+        maxPV: 52,
         krakensCount: 0,
       };
 
@@ -98,7 +98,7 @@ export const createGame = functions.https.onCall(
           timeoutCount: 0,
           hasMomentum: false,
           hasCooldown: false,
-          maxPV: 26,
+          maxPV: 52,
           krakensCount: 0,
         };
       } else {
@@ -116,7 +116,7 @@ export const createGame = functions.https.onCall(
           timeoutCount: 0,
           hasMomentum: false,
           hasCooldown: false,
-          maxPV: 26,
+          maxPV: 52,
           krakensCount: 0,
         };
       }
