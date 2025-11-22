@@ -133,6 +133,16 @@ async function resolveRound(gameRef, game) {
             p2Momentum = true;
             functions.logger.info('Player 2 gained momentum', { gameId: game.id });
         }
+        // 🔥 COOLDOWN : Si le joueur a utilisé le Momentum ce round, activer le cooldown
+        // Sinon, désactiver le cooldown (round normal écoulé)
+        const p1Cooldown = game.player1.hasMomentum && game.player1.usingSpecial !== null;
+        const p2Cooldown = game.player2.hasMomentum && game.player2.usingSpecial !== null;
+        if (p1Cooldown) {
+            functions.logger.info('Player 1 cooldown activated', { gameId: game.id });
+        }
+        if (p2Cooldown) {
+            functions.logger.info('Player 2 cooldown activated', { gameId: game.id });
+        }
         // Vérifier si un joueur gagne une charge (tous les 10 rounds)
         let p1NewCharges = game.player1.specialCharges;
         let p2NewCharges = game.player2.specialCharges;
@@ -153,6 +163,7 @@ async function resolveRound(gameRef, game) {
             'player1.isLocked': false,
             'player1.usingSpecial': null,
             'player1.hasMomentum': p1Momentum,
+            'player1.hasCooldown': p1Cooldown,
             'player2.deck': newPlayer2Deck,
             'player2.currentCardIndex': 0,
             'player2.score': game.player2.score,
@@ -160,6 +171,7 @@ async function resolveRound(gameRef, game) {
             'player2.isLocked': false,
             'player2.usingSpecial': null,
             'player2.hasMomentum': p2Momentum,
+            'player2.hasCooldown': p2Cooldown,
             pot: newPot,
             phase: 'WAITING',
             roundCount: nextRoundCount,

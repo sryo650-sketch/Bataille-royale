@@ -70,6 +70,14 @@ export const useSpecial = functions.https.onCall(
         );
       }
 
+      // 🔥 COOLDOWN : Empêcher l'utilisation de bonus après Momentum
+      if (player.hasCooldown) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Cooldown actif : Attendez le prochain round'
+        );
+      }
+
       // ✅ Vérifier que le joueur n'a pas déjà lock
       if (player.isLocked) {
         throw new functions.https.HttpsError(

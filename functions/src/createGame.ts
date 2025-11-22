@@ -64,6 +64,7 @@ export const createGame = functions.https.onCall(
         usingSpecial: null,
         timeoutCount: 0,
         hasMomentum: false,
+        hasCooldown: false,
       };
 
       // État du joueur 2 (adversaire ou bot)
@@ -94,6 +95,7 @@ export const createGame = functions.https.onCall(
           usingSpecial: null,
           timeoutCount: 0,
           hasMomentum: false,
+          hasCooldown: false,
         };
       } else {
         // Jouer contre un bot
@@ -109,6 +111,7 @@ export const createGame = functions.https.onCall(
           usingSpecial: null,
           timeoutCount: 0,
           hasMomentum: false,
+          hasCooldown: false,
         };
       }
 
@@ -128,6 +131,7 @@ export const createGame = functions.https.onCall(
         lastActionAt: now,
         winner: null,
         defeatReason: null,
+        krakenEvent: null,
         createdAt: now,
         updatedAt: now,
       };

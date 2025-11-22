@@ -19,6 +19,7 @@ export interface PlayerState {
   usingSpecial: SpecialType | null;
   timeoutCount: number; // Nombre de fois où le joueur n'a pas lock à temps
   hasMomentum: boolean; // Si true, le prochain bonus est gratuit
+  hasCooldown: boolean; // Si true, impossible d'utiliser un bonus ce round (après Momentum)
 }
 
 export interface GameState {
@@ -36,6 +37,10 @@ export interface GameState {
   lastActionAt: Timestamp; // Dernière action d'un joueur (pour détecter l'inactivité)
   winner: string | null;
   defeatReason: DefeatReason | null;
+  krakenEvent?: {
+    p1Card: string | null;
+    p2Card: string | null;
+  } | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

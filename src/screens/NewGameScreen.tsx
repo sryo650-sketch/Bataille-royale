@@ -132,6 +132,33 @@ const prevRound = React.useRef(gameState?.roundCount ?? 0);
     }
   }, [gameState?.roundCount, currentPlayer?.deck, opponent?.deck, usePrevCards]);
 
+  // 🐙 Détection de l'événement Kraken
+  useEffect(() => {
+    if (gameState?.krakenEvent && (gameState.krakenEvent.p1Card || gameState.krakenEvent.p2Card)) {
+      const myCard = isPlayer1 ? gameState.krakenEvent.p1Card : gameState.krakenEvent.p2Card;
+      const oppCard = isPlayer1 ? gameState.krakenEvent.p2Card : gameState.krakenEvent.p1Card;
+      
+      const myCardData = myCard ? getCardById(myCard) : null;
+      const oppCardData = oppCard ? getCardById(oppCard) : null;
+      
+      setTimeout(() => {
+        const formatCard = (card: typeof myCardData) => {
+          if (!card) return 'une carte';
+          const suitEmoji: Record<string, string> = { H: '♥️', D: '♦️', C: '♣️', S: '♠️' };
+          const emoji = suitEmoji[card.suit as any] || '';
+          const rankName = ['', '', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Valet', 'Dame', 'Roi', 'As'][card.rank] || '';
+          return `${rankName} ${emoji}`;
+        };
+        
+        Alert.alert(
+          '🐙 KRAKEN',
+          `${opponent?.name || 'Adversaire'} a perdu ${formatCard(oppCardData)}\n` +
+          `Vous avez perdu ${formatCard(myCardData)}`,
+          [{ text: 'Continuer' }]
+        );
+      }, 1500);
+    }
+  }, [gameState?.krakenEvent, isPlayer1, opponent?.name]);
 
   // Animation "Pulse" (Joueur seulement)
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
@@ -548,7 +575,7 @@ const prevRound = React.useRef(gameState?.roundCount ?? 0);
             style={[styles.sideToggle, selectedSpecial === 'defense' && styles.sideToggleActive]}
             onPress={() => handleToggleSpecial('defense')}
             activeOpacity={0.7}
-            disabled={!isMyFaceUp || currentPlayer?.isLocked || ((currentPlayer?.specialCharges ?? 0) <= 0 && !currentPlayer?.hasMomentum)}
+            disabled={!isMyFaceUp || currentPlayer?.isLocked || currentPlayer?.hasCooldown || ((currentPlayer?.specialCharges ?? 0) <= 0 && !currentPlayer?.hasMomentum)}
           >
             <ShieldIcon 
               size={36}
@@ -587,7 +614,7 @@ const prevRound = React.useRef(gameState?.roundCount ?? 0);
             style={[styles.sideToggle, selectedSpecial === 'attack' && styles.sideToggleActive]}
             onPress={() => handleToggleSpecial('attack')}
             activeOpacity={0.7}
-            disabled={!isMyFaceUp || currentPlayer?.isLocked || ((currentPlayer?.specialCharges ?? 0) <= 0 && !currentPlayer?.hasMomentum)}
+            disabled={!isMyFaceUp || currentPlayer?.isLocked || currentPlayer?.hasCooldown || ((currentPlayer?.specialCharges ?? 0) <= 0 && !currentPlayer?.hasMomentum)}
           >
             <SwordIcon 
               size={36}

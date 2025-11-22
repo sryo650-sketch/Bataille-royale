@@ -36,6 +36,7 @@ export interface PlayerState {
   
   // Momentum (règle spéciale)
   hasMomentum?: boolean; // Si true, le prochain bonus est gratuit
+  hasCooldown?: boolean; // Si true, impossible d'utiliser un bonus ce round (après Momentum)
 }
 
 export interface GameState {
@@ -46,6 +47,12 @@ export interface GameState {
   // Joueurs
   player1: PlayerState;
   player2: PlayerState;
+  
+  // Événement Kraken
+  krakenEvent?: {
+    p1Card: string | null;
+    p2Card: string | null;
+  } | null;
   
   // État de la partie
   phase: GamePhaseServer;
