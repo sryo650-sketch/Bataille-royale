@@ -7,6 +7,7 @@ import {
   Alert,
   Platform,
   Animated,
+  Easing,
   ActivityIndicator,
 } from 'react-native';
 import ReanimatedAnimated, {
@@ -72,6 +73,7 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
     oppSpecial?: 'attack' | 'defense' | null;
   }>({});
   const [showKraken, setShowKraken] = useState(false); // Overlay visuel Kraken
+  const [isFlippingOut, setIsFlippingOut] = useState(false); // Animation flip sortant
   const prevRound = React.useRef(gameState?.roundCount ?? 0);
   const lockingRef = React.useRef(false); // Protection double-clic
   
@@ -102,18 +104,27 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
       // 1. DÉBUT TRANSITION (T+0)
       // On fige les anciennes cartes et on les montre
       setUsePrevCards(true);
-      setShowResult(true);
-      setMyCardRevealed(false); // On laisse showResult gérer la visibilité
+      setMyCardRevealed(false);
       
-      // FIX CLIPPING : Synchroniser le retournement et le changement de données
-      // au même moment (T+1.5s) pour éviter le clipping visuel
       const timeouts: NodeJS.Timeout[] = [];
       
+      // Attendre 300ms avant d'afficher les résultats (évite le clipping)
+      timeouts.push(setTimeout(() => {
+        setShowResult(true);
+      }, 300));
+      
+      // Flip animation (T+1.8s) avant de masquer
+      timeouts.push(setTimeout(() => {
+        setIsFlippingOut(true);
+      }, 1800));
+      
+      // Masquer et réinitialiser (T+2.3s) après le flip
       timeouts.push(setTimeout(() => {
         setShowResult(false);
-        setUsePrevCards(false); // Changement simultané des données
+        setUsePrevCards(false);
+        setIsFlippingOut(false);
         prevRound.current = gameState.roundCount;
-      }, 1500));
+      }, 2300));
 
       return () => {
         timeouts.forEach(clearTimeout);
@@ -148,6 +159,9 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
 
   // Animation "Pulse" (Joueur seulement)
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
+  
+  // Animation flip sortant
+  const flipOutAnim = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!currentPlayer?.isLocked && !myCardRevealed) {
@@ -156,19 +170,41 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
           Animated.timing(pulseAnim, {
             toValue: 1.05,
             duration: 800,
+            easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
             duration: 800,
+            easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           })
         ])
       ).start();
     } else {
-      pulseAnim.setValue(1);
+      // Arrêt progressif au lieu de setValue
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
     }
   }, [currentPlayer?.isLocked, myCardRevealed]);
+
+  // Animation flip sortant
+  useEffect(() => {
+    if (isFlippingOut) {
+      Animated.timing(flipOutAnim, {
+        toValue: 1,
+        duration: 400,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    } else {
+      flipOutAnim.setValue(0);
+    }
+  }, [isFlippingOut]);
 
   // Utiliser le state serveur après lock, ou le state local avant lock
   const selectedSpecial = currentPlayer?.isLocked ? currentPlayer?.usingSpecial : localUsingSpecial;
@@ -512,14 +548,25 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
           {(opponent?.deck?.length ?? 0) > 1 && (
             <View style={styles.deckPile} />
           )}
-          <Card
-            key={displayedOppCardId} 
-            card={displayedOppCard}
-            isFaceUp={!!isOppFaceUp}
-            isWinning={roundResult === 'lose'}
-            isLosing={roundResult === 'win'}
-            size="md"
-          />
+          <Animated.View
+            style={{
+              transform: [{
+                rotateY: flipOutAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '90deg']
+                })
+              }]
+            }}
+          >
+            <Card
+              key={displayedOppCardId} 
+              card={displayedOppCard}
+              isFaceUp={!!isOppFaceUp}
+              isWinning={roundResult === 'lose'}
+              isLosing={roundResult === 'win'}
+              size="md"
+            />
+          </Animated.View>
         </View>
       </View>
 
@@ -617,10 +664,20 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
               <View style={styles.deckPile} />
             )}
             
-            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+            <Animated.View style={{ 
+              transform: [
+                { scale: pulseAnim },
+                { 
+                  rotateY: flipOutAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '90deg']
+                  })
+                }
+              ] 
+            }}>
               <TouchableOpacity 
                 onPress={handleFlip}
-                  activeOpacity={0.9}
+                activeOpacity={0.9}
                 disabled={currentPlayer?.isLocked || isFlipping}
               >
                 <Card
@@ -631,7 +688,7 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
                   isLosing={roundResult === 'lose'}
                   size="md"
                 />
-                </TouchableOpacity>
+              </TouchableOpacity>
             </Animated.View>
           </View>
 
