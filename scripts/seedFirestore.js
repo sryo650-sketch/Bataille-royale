@@ -2,19 +2,31 @@
 // Script pour créer des données de test dans Firestore
 // Usage : node scripts/seedFirestore.js
 
+require('dotenv').config(); // ✅ SÉCURITÉ : Charger .env
+
 const { initializeApp } = require('firebase/app');
 const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } = require('firebase/auth');
 const { getFirestore, doc, setDoc, serverTimestamp, collection, query, where, getDocs } = require('firebase/firestore');
 
-// Configuration Firebase (copier depuis .env)
+// ✅ SÉCURITÉ : Configuration depuis variables d'environnement
 const firebaseConfig = {
-  apiKey: "AIzaSyBLQvov4u9PYndACrAQqcnO0eMDgD8qZ60",
-  authDomain: "pugna-regalis.firebaseapp.com",
-  projectId: "pugna-regalis",
-  storageBucket: "pugna-regalis.firebasestorage.app",
-  messagingSenderId: "1040033793128",
-  appId: "1:1040033793128:web:946df613420da482f267dd",
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
+
+// Validation
+if (!firebaseConfig.apiKey) {
+  console.error('❌ ERREUR : Clés Firebase manquantes !');
+  console.error('👉 Créer un fichier .env à la racine avec :');
+  console.error('   EXPO_PUBLIC_FIREBASE_API_KEY=...');
+  console.error('   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...');
+  console.error('   etc.');
+  process.exit(1);
+}
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
