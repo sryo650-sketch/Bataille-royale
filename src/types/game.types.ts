@@ -37,6 +37,10 @@ export interface PlayerState {
   // Momentum (règle spéciale)
   hasMomentum?: boolean; // Si true, le prochain bonus est gratuit
   hasCooldown?: boolean; // Si true, impossible d'utiliser un bonus ce round (après Momentum)
+  
+  // Kraken (PV max décroissant)
+  maxPV?: number; // PV max (26 au départ, réduit par le Kraken)
+  krakensCount?: number; // Nombre de cartes retirées par le Kraken
 }
 
 export interface GameState {

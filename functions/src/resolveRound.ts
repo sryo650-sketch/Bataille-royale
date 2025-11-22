@@ -138,6 +138,10 @@ export async function resolveRound(
     // 🐙 KRAKEN : Tous les 15 rounds, dévorer la carte la plus faible de chaque deck
     let krakenP1Card: string | null = null;
     let krakenP2Card: string | null = null;
+    let p1NewMaxPV = game.player1.maxPV;
+    let p2NewMaxPV = game.player2.maxPV;
+    let p1NewKrakensCount = game.player1.krakensCount;
+    let p2NewKrakensCount = game.player2.krakensCount;
 
     if (nextRoundCount % 15 === 0 && newPlayer1Deck.length > 0 && newPlayer2Deck.length > 0) {
       // Trouver la carte la plus faible du deck de chaque joueur
@@ -154,11 +158,15 @@ export async function resolveRound(
       if (p1IndexToRemove !== -1) {
         krakenP1Card = newPlayer1Deck[p1IndexToRemove];
         newPlayer1Deck.splice(p1IndexToRemove, 1);
+        p1NewKrakensCount += 1;
+        p1NewMaxPV -= 1;
       }
       
       if (p2IndexToRemove !== -1) {
         krakenP2Card = newPlayer2Deck[p2IndexToRemove];
         newPlayer2Deck.splice(p2IndexToRemove, 1);
+        p2NewKrakensCount += 1;
+        p2NewMaxPV -= 1;
       }
 
       functions.logger.info('Kraken event triggered', {
@@ -186,6 +194,8 @@ export async function resolveRound(
       'player1.usingSpecial': null,
       'player1.hasMomentum': p1Momentum,
       'player1.hasCooldown': p1Cooldown,
+      'player1.maxPV': p1NewMaxPV,
+      'player1.krakensCount': p1NewKrakensCount,
       'player2.deck': newPlayer2Deck,
       'player2.currentCardIndex': 0,
       'player2.score': game.player2.score,
@@ -194,6 +204,8 @@ export async function resolveRound(
       'player2.usingSpecial': null,
       'player2.hasMomentum': p2Momentum,
       'player2.hasCooldown': p2Cooldown,
+      'player2.maxPV': p2NewMaxPV,
+      'player2.krakensCount': p2NewKrakensCount,
       pot: newPot,
       phase: 'WAITING',
       roundCount: nextRoundCount,

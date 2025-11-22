@@ -16,6 +16,7 @@ interface HealthBarProps {
   color?: string;
   label?: string;
   showPercentage?: boolean;
+  krakensCount?: number; // Nombre de cartes retirées par le Kraken
   testID?: string;
 }
 
@@ -25,6 +26,7 @@ export const HealthBar: React.FC<HealthBarProps> = ({
   color,
   label = 'PV',
   showPercentage = false,
+  krakensCount = 0,
   testID = 'health-bar',
 }) => {
   // Calcul du pourcentage
@@ -112,7 +114,10 @@ export const HealthBar: React.FC<HealthBarProps> = ({
         {/* Texte */}
         <View style={styles.textContainer}>
           <Text style={styles.text}>
-            {showPercentage ? `${Math.round(percent)}%` : `${current} ${label}`}
+            {showPercentage 
+              ? `${Math.round(percent)}%` 
+              : `${current} / ${max} ${label}${krakensCount > 0 ? `  (-${krakensCount})` : ''}`
+            }
           </Text>
         </View>
       </View>

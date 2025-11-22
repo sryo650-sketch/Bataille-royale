@@ -530,7 +530,8 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
           <View style={{flex: 1, marginRight: 15}}>
             <HealthBar 
               current={opponent?.deck?.length ?? 0} 
-              max={52} 
+              max={opponent?.maxPV ?? 52} 
+              krakensCount={opponent?.krakensCount ?? 0}
               color="#EF4444" 
               label="PV"
             />
@@ -718,7 +719,8 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
             <View style={{flex: 1, marginLeft: 15}}>
               <HealthBar 
                 current={currentPlayer?.deck?.length ?? 0} 
-                max={52} 
+                max={currentPlayer?.maxPV ?? 52} 
+                krakensCount={currentPlayer?.krakensCount ?? 0}
                 color="#3B82F6" 
                 label="PV"
               />
