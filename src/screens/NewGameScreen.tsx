@@ -73,7 +73,8 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
   const [isFlipping, setIsFlipping] = useState(false);
 
   const handleFlip = () => {
-    if (isFlipping || currentPlayer?.isLocked) return;
+    // Bloquer le flip si : en train de flipper, déjà locked, ou en phase de résolution
+    if (isFlipping || currentPlayer?.isLocked || showResult || usePrevCards) return;
     setIsFlipping(true);
     setMyCardRevealed(!myCardRevealed);
     setTimeout(() => setIsFlipping(false), 600); // Un peu plus que l'animation (400ms)
@@ -97,21 +98,19 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
       setShowResult(true);
       setMyCardRevealed(false); // On laisse showResult gérer la visibilité
       
-      // 2. RETOURNEMENT (T+2s)
-      // On retourne les cartes (dos visible) -> Animation de flip commence
-      const t1 = setTimeout(() => {
+      // FIX CLIPPING : Synchroniser le retournement et le changement de données
+      // au même moment (T+1.5s) pour éviter le clipping visuel
+      const timeouts: NodeJS.Timeout[] = [];
+      
+      timeouts.push(setTimeout(() => {
         setShowResult(false);
-      }, 2000);
-
-      // 3. ÉCHANGE DE DONNÉES (T+2.6s)
-      // Une fois retournées (600ms plus tard), on met les nouvelles cartes
-      // et on reset l'état local
-      const t2 = setTimeout(() => {
-        setUsePrevCards(false);
+        setUsePrevCards(false); // Changement simultané des données
         prevRound.current = gameState.roundCount;
-      }, 2600);
+      }, 1500));
 
-      return () => { clearTimeout(t1); clearTimeout(t2); };
+      return () => {
+        timeouts.forEach(clearTimeout);
+      };
     } else {
       // Tant qu'on ne change pas de round, on tient à jour les "prevCards" 
       // pour qu'elles soient prêtes au moment de la transition.
@@ -190,7 +189,8 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
     // Ne pas permettre de changer après avoir lock
     if (currentPlayer?.isLocked) return;
     
-    if ((currentPlayer?.specialCharges ?? 0) <= 0) {
+    // Bloquer si pas de charges ET pas de Momentum
+    if ((currentPlayer?.specialCharges ?? 0) <= 0 && !currentPlayer?.hasMomentum) {
       Alert.alert("Pas de charges", "Vous n'avez plus de charges spéciales !");
       return;
     }
@@ -201,7 +201,7 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
     } else {
       setLocalUsingSpecial(type);
     }
-  }, [currentPlayer?.isLocked, currentPlayer?.specialCharges, localUsingSpecial]);
+  }, [currentPlayer?.isLocked, currentPlayer?.specialCharges, currentPlayer?.hasMomentum, localUsingSpecial]);
 
   const handleSurrender = useCallback(async () => {
     if (!gameId || actionLoading) return;
@@ -386,7 +386,12 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
           </View>
           <View style={styles.nameFlagRow}>
             <Text style={styles.playerNameLarge}>{opponent?.name || 'Adversaire'}</Text>
-            <Text style={{fontSize: 16, marginLeft: 6}}>{opponent?.countryCode ? `🏳️` : '🌍'}</Text>
+            <Text style={{fontSize: 16, marginLeft: 6}}>
+              {opponent?.countryCode 
+                ? String.fromCodePoint(...[...opponent.countryCode.toUpperCase()].map(c => 0x1F1E6 - 65 + c.charCodeAt(0)))
+                : '🌍'
+              }
+            </Text>
           </View>
         </View>
 
@@ -438,6 +443,14 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
         )}
       </View>
 
+      {/* Badge Momentum */}
+      {currentPlayer?.hasMomentum && !currentPlayer?.isLocked && (
+        <View style={styles.momentumBadge}>
+          <Text style={styles.momentumText}>🔥 MOMENTUM</Text>
+          <Text style={styles.momentumSubtext}>Bonus GRATUIT</Text>
+        </View>
+      )}
+
       {/* ZONE JOUEUR (Bas) */}
       <View style={styles.playerZone}>
         
@@ -470,7 +483,7 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
             style={[styles.sideToggle, selectedSpecial === 'defense' && styles.sideToggleActive]}
             onPress={() => handleToggleSpecial('defense')}
             activeOpacity={0.7}
-            disabled={!isMyFaceUp || currentPlayer?.isLocked || (currentPlayer?.specialCharges ?? 0) <= 0}
+            disabled={!isMyFaceUp || currentPlayer?.isLocked || ((currentPlayer?.specialCharges ?? 0) <= 0 && !currentPlayer?.hasMomentum)}
           >
             <ShieldIcon 
               size={36}
@@ -509,7 +522,7 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
             style={[styles.sideToggle, selectedSpecial === 'attack' && styles.sideToggleActive]}
             onPress={() => handleToggleSpecial('attack')}
             activeOpacity={0.7}
-            disabled={!isMyFaceUp || currentPlayer?.isLocked || (currentPlayer?.specialCharges ?? 0) <= 0}
+            disabled={!isMyFaceUp || currentPlayer?.isLocked || ((currentPlayer?.specialCharges ?? 0) <= 0 && !currentPlayer?.hasMomentum)}
           >
             <SwordIcon 
               size={36}
@@ -655,6 +668,36 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#FFF',
   },
+  momentumBadge: {
+    position: 'absolute',
+    bottom: 280,
+    right: 20,
+    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    borderWidth: 2,
+    borderColor: '#EF4444',
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    zIndex: 50,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  momentumText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#EF4444',
+    letterSpacing: 0.5,
+  },
+  momentumSubtext: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#FCA5A5',
+    marginTop: 1,
+  },
   roundResultText: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 95 : 75,
@@ -663,7 +706,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     letterSpacing: 0.5,
-    zIndex: 100,
   },
   roundResultWin: {
     color: '#10B981',
