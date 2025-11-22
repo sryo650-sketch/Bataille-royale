@@ -550,12 +550,12 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
           )}
           <Animated.View
             style={{
-              transform: [{
+              transform: (isFlippingOut && usePrevCards) ? [{
                 rotateY: flipOutAnim.interpolate({
                   inputRange: [0, 1],
                   outputRange: ['0deg', '90deg']
                 })
-              }]
+              }] : []
             }}
           >
             <Card
@@ -667,12 +667,12 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
             <Animated.View style={{ 
               transform: [
                 { scale: pulseAnim },
-                { 
+                ...((isFlippingOut && usePrevCards) ? [{ 
                   rotateY: flipOutAnim.interpolate({
                     inputRange: [0, 1],
                     outputRange: ['0deg', '90deg']
                   })
-                }
+                }] : [])
               ] 
             }}>
               <TouchableOpacity 

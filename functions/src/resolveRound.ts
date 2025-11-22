@@ -169,6 +169,13 @@ export async function resolveRound(
       });
     }
 
+    // Vérifier fin de partie APRÈS le Kraken
+    if (newPlayer1Deck.length === 0 || newPlayer2Deck.length === 0) {
+      const gameWinner = newPlayer1Deck.length > 0 ? game.player1.uid : game.player2.uid;
+      await endGame(gameRef, game, gameWinner, 'normal');
+      return;
+    }
+
     // Mettre à jour l'état
     await gameRef.update({
       'player1.deck': newPlayer1Deck,
