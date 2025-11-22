@@ -13,6 +13,13 @@ export interface MatchRecord {
   cardsWon: number;
 }
 
+export interface RecentOpponent {
+  name: string;
+  countryCode: string;
+  lastPlayed: string;
+  result: 'WIN' | 'LOSS';
+}
+
 export interface UserStats {
   elo: number;
   wins: number;
@@ -21,6 +28,7 @@ export interface UserStats {
   bestStreak: number;
   totalCardsWon: number;
   totalChargesEarned: number;
+  availableCharges: number; // Charges disponibles en inventaire (max 3)
   history: MatchRecord[];
   countryCode: string;
   gamesPlayed: number;
@@ -33,6 +41,7 @@ type UpdateProfilePayload = {
   countryCode?: string;
   avatar?: string;
   totalChargesEarned?: number;
+  availableCharges?: number;
 };
 
 interface UserStatsContextType {
@@ -49,11 +58,40 @@ const defaultStats: UserStats = {
   bestStreak: 0,
   totalCardsWon: 0,
   totalChargesEarned: 0,
-  history: [],
+  availableCharges: 0,
   countryCode: 'FR',
   gamesPlayed: 0,
   avatar: undefined,
   playerName: 'Capitaine',
+  history: [
+    {
+      id: 'mock-1',
+      opponentName: 'Viking_King',
+      opponentCountry: 'NO',
+      result: 'WIN',
+      scoreChange: 52,
+      cardsWon: 52,
+      date: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+    },
+    {
+      id: 'mock-2',
+      opponentName: 'Samurai_X',
+      opponentCountry: 'JP',
+      result: 'LOSS',
+      scoreChange: -26,
+      cardsWon: 0,
+      date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+    },
+    {
+      id: 'mock-3',
+      opponentName: 'Knight_Rider',
+      opponentCountry: 'GB',
+      result: 'WIN',
+      scoreChange: 52,
+      cardsWon: 52,
+      date: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
+    }
+  ],
 };
 
 const STORAGE_KEY = 'royal_battles_stats';
@@ -69,7 +107,7 @@ export const UserStatsProvider: React.FC<{ children: ReactNode }> = ({ children 
       try {
         // Charger les données d'onboarding en priorité
         const onboardingData = await getUserData();
-        
+
         // Charger les stats du jeu
         const saved = await AsyncStorage.getItem(STORAGE_KEY);
         if (saved && isMounted) {

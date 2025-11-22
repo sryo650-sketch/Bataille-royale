@@ -54,6 +54,7 @@ export const translations = {
     defeat: 'DÉFAITE',
     won_all: 'Vous avez remporté toutes les cartes.',
     lost_all: 'Vous avez perdu toutes vos cartes.',
+    surrendered: 'Vous avez abandonné la partie.',
     rapid_win: 'Victoire au temps !',
     rapid_loss: 'Défaite au temps...',
     rapid_inactivity: 'Défaite par inactivité',
@@ -85,6 +86,9 @@ export const translations = {
     queen: 'D',
     king: 'R',
     ace: 'A',
+    charges: 'Charges',
+    edition_royale: 'Edition Royale',
+    recent_opponents: 'Derniers Adversaires',
   },
   en: {
     streak: 'Streak',
@@ -137,6 +141,7 @@ export const translations = {
     defeat: 'DEFEAT',
     won_all: 'You have won all the cards.',
     lost_all: 'You have lost all your cards.',
+    surrendered: 'You have surrendered the game.',
     rapid_win: 'Victory by time!',
     rapid_loss: 'Defeat by time...',
     rapid_inactivity: 'Defeat by inactivity',
@@ -168,6 +173,9 @@ export const translations = {
     queen: 'Q',
     king: 'K',
     ace: 'A',
+    charges: 'Charges',
+    edition_royale: 'Royal Edition',
+    recent_opponents: 'Recent Opponents',
   },
 };
 

@@ -98,9 +98,19 @@ export const Card: React.FC<CardProps> = React.memo(({
   // 4. RENDU (Optimisation structurelle)
   const containerStyle = useMemo(() => [
     styles.card, 
-    { width, height, borderColor }, 
+    { 
+      width, 
+      height, 
+      borderColor,
+      borderWidth: (isWinning || isLosing) ? 4 : 2,
+      shadowColor: borderColor,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: (isWinning || isLosing) ? 1 : 0,
+      shadowRadius: (isWinning || isLosing) ? 25 : 0,
+      elevation: (isWinning || isLosing) ? 12 : 0,
+    }, 
     style
-  ], [width, height, borderColor, style]);
+  ], [width, height, borderColor, style, isWinning, isLosing]);
 
   // Gestion état vide
   if (!card) {

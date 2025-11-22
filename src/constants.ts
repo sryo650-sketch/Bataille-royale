@@ -25,43 +25,12 @@ export const RANK_LABELS: Record<Rank, string> = {
   [Rank.ACE]: 'A',
 };
 
-export const MOCK_FRIENDS = [
-  { id: '1', name: 'Sarah K.', status: 'In Game', avatar: 'https://picsum.photos/50/50?random=1', countryCode: 'FR' },
-  { id: '2', name: 'Mike D.', status: 'Online', avatar: 'https://picsum.photos/50/50?random=2', countryCode: 'CA' },
-  { id: '3', name: 'Alex R.', status: 'Offline', avatar: 'https://picsum.photos/50/50?random=3', countryCode: 'US' },
-] as const;
+// ❌ MOCK DATA REMOVED - Using Firebase now
+// MOCK_FRIENDS and MOCK_RANDOM_PLAYERS have been replaced by Firebase hooks:
+// - useFriendsFirebase()
+// - useRandomPlayersFirebase()
 
-export type FriendStatus = (typeof MOCK_FRIENDS)[number]['status'];
-
-export const MOCK_RANDOM_PLAYERS = [
-  {
-    id: 'r1',
-    name: 'Nova',
-    mode: 'Turbo',
-    timeAgo: '2m',
-    elo: 1480,
-    avatar: 'https://picsum.photos/50/50?random=11',
-    countryCode: 'US',
-  },
-  {
-    id: 'r2',
-    name: 'ShadowFox',
-    mode: 'Ranked',
-    timeAgo: '5m',
-    elo: 1525,
-    avatar: 'https://picsum.photos/50/50?random=12',
-    countryCode: 'JP',
-  },
-  {
-    id: 'r3',
-    name: 'Luna',
-    mode: 'Arcade',
-    timeAgo: '12m',
-    elo: 1370,
-    avatar: 'https://picsum.photos/50/50?random=13',
-    countryCode: 'FR',
-  },
-] as const;
+export type FriendStatus = 'In Game' | 'Online' | 'Offline';
 
 export interface LeaderboardEntry {
   id: string;
@@ -95,3 +64,17 @@ export const COUNTRY_LEADERBOARDS: Record<string, LeaderboardEntry[]> = {
     { id: 'us5', name: 'Valk', elo: 1824, countryCode: 'US', trend: 'steady' },
   ],
 };
+
+// UI Constants - Centralized magic numbers and default values
+export const UI_CONSTANTS = {
+  BORDER_RADIUS_FULL: 999,
+  BORDER_RADIUS_CARD: 20,
+  BORDER_RADIUS_MEDIUM: 16,
+  SPACING_LARGE: 48,
+  SPACING_MEDIUM: 24,
+  SPACING_SMALL: 12,
+  SPACING_TINY: 8,
+  DEFAULT_COUNTRY: 'FR',
+  MAX_CHARGES: 3,
+  ALLOWED_AVATAR_DOMAINS: ['picsum.photos', 'avatars.githubusercontent.com', 'cdn.example.com'],
+} as const;

@@ -5,12 +5,15 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme, useThemeColor } from './src/contexts/ThemeContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { UserStatsProvider } from './src/contexts/UserStatsContext';
+import { AuthProvider } from './src/contexts/AuthContext';
 import { NavigationHandler, Screen, GameConfig } from './src/types';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { GameScreen } from './src/screens/GameScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
+import { TestFirebaseScreen } from './src/screens/TestFirebaseScreen';
+import { TestBackendScreen } from './src/screens/TestBackendScreen';
 import { checkOnboardingStatus } from './src/utils/onboardingUtils';
 
 const AppNavigator: React.FC = () => {
@@ -62,6 +65,12 @@ const AppNavigator: React.FC = () => {
   }
 
   const renderScreen = () => {
+    // 🧪 TEST BACKEND - Activer pour tester l'architecture server-authoritative
+    return <TestBackendScreen />;
+    
+    // 🧪 TEST FIREBASE - Décommenter pour tester
+    // return <TestFirebaseScreen />;
+    
     if (currentScreen === Screen.HOME) {
       return <HomeScreen onNavigate={handleNavigate} />;
     }
@@ -89,11 +98,13 @@ export default function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <UserStatsProvider>
-          <SafeAreaProvider>
-            <AppNavigator />
-          </SafeAreaProvider>
-        </UserStatsProvider>
+        <AuthProvider>
+          <UserStatsProvider>
+            <SafeAreaProvider>
+              <AppNavigator />
+            </SafeAreaProvider>
+          </UserStatsProvider>
+        </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
   );

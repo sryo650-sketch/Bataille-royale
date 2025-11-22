@@ -41,18 +41,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
         setPlayerName(data.username);
         setCountryCode(data.countryCode);
         setAvatarUrl(data.avatar || '');
+      } else {
+        // Pas de données d'onboarding, utiliser les stats
+        setPlayerName(stats.playerName ?? '');
+        setCountryCode(stats.countryCode ?? '');
+        setAvatarUrl(stats.avatar ?? '');
       }
     };
     loadUserData();
-  }, []);
-
-  useEffect(() => {
-    if (!userData) {
-      setPlayerName(stats.playerName ?? '');
-      setCountryCode(stats.countryCode ?? '');
-      setAvatarUrl(stats.avatar ?? '');
-    }
-  }, [stats.playerName, stats.countryCode, stats.avatar, userData]);
+  }, [stats.playerName, stats.countryCode, stats.avatar]);
 
   const handleSave = async () => {
     if (!countryCode.trim()) {

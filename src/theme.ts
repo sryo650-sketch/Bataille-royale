@@ -1,6 +1,8 @@
 export const COLORS = {
   primary: '#3A66FF',
   gold: '#E6C15A',
+  orange: '#F97316',
+  blue: '#38BDF8',
   red: '#D93B48',
   black: '#0F1218',
   white: '#FFFFFF',

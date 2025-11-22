@@ -22,9 +22,10 @@ export const SpecialCharges: React.FC<SpecialChargesProps> = ({
   const nextChargeProgress = (streak % 3) / 3; // Changé de 10 à 3
 
   // Ne rien afficher si pas de charges du tout (mode classique au début)
-  if (charges === 0 && (opponentCharges === undefined || opponentCharges === 0)) {
-    return null;
-  }
+  // MODIFICATION : On veut toujours voir les slots vides !
+  // if (charges === 0 && (opponentCharges === undefined || opponentCharges === 0)) {
+  //   return null;
+  // }
 
   return (
     <View style={styles.container}>
@@ -61,32 +62,7 @@ export const SpecialCharges: React.FC<SpecialChargesProps> = ({
         </View>
       )}
 
-      {/* Toggle Attack/Defense + Bouton d'utilisation */}
-      {charges > 0 && !disabled && (
-        <View style={styles.controlsRow}>
-          <TouchableOpacity
-            style={[styles.toggleButton, mode === 'attack' && styles.toggleActive]}
-            onPress={() => setMode('attack')}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.toggleText}>⚔️</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.useButton, mode === 'attack' ? styles.attackButton : styles.defenseButton]}
-            onPress={mode === 'attack' ? onUseAttack : onUseDefense}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.useButtonText}>UTILISER</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleButton, mode === 'defense' && styles.toggleActive]}
-            onPress={() => setMode('defense')}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.toggleText}>🛡️</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* Toggle Attack/Defense + Bouton d'utilisation - SUPPRIMÉ (Géré par NewGameScreen) */}
     </View>
   );
 };

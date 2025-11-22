@@ -1,7 +1,6 @@
 // src/screens/HomeScreen.tsx
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, {
   FadeInDown,
   useAnimatedScrollHandler,
@@ -11,52 +10,87 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { Button } from '../components/Button';
-import { MOCK_FRIENDS, MOCK_RANDOM_PLAYERS } from '../constants';
-import { GameConfig, GameMode, NavigationHandler, Screen } from '../types';
+import { RecentOpponentRow, FriendRow, RandomPlayerRow } from '../components/home';
+import { UI_CONSTANTS } from '../constants';
+import { GameMode, NavigationHandler, Screen } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUserStats } from '../contexts/UserStatsContext';
 import { useTheme, useThemeColor } from '../contexts/ThemeContext';
 import { ThemeColors } from '../theme';
 import { getFlagEmoji } from '../utils/countryUtils';
+import {
+  useGameNavigation,
+  useModeOptions,
+  useFriendsFirebase,
+  useRecentOpponentsFirebase,
+  useRandomPlayersFirebase,
+} from '../hooks';
 
-const placeholderAvatar = require('../assets/placeholder.png');
 const LANGUAGE_STORAGE_KEY = 'userLang';
-
-const formatCharges = (charges: number): string => {
-  if (charges < 1000) return charges.toString();
-  if (charges < 10000) return `${Math.floor(charges / 1000)}K+`;
-  if (charges < 100000) return `${Math.floor(charges / 1000)}K+`;
-  return `${Math.floor(charges / 1000000)}M+`;
-};
 
 interface HomeScreenProps {
   onNavigate: NavigationHandler;
 }
 
-type ModeOption = {
-  key: GameMode;
-  title: string;
-  description: string;
-  accent: string;
-  background: string;
-  cta: string;
-  badge?: string;
-};
-
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
   const { t, language, setLanguage } = useLanguage();
   const { stats } = useUserStats();
   const [selectedMode, setSelectedMode] = useState<GameMode>('classic');
-  const { toggle } = useTheme();
+  const { toggle, effective } = useTheme();
   const colors = useThemeColor();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-  const themeToggleLabel = language === 'fr' ? 'Changer de thème' : 'Toggle theme';
+
+  const isDarkTheme = effective === 'dark';
   const scrollY = useSharedValue(0);
   const pulse = useSharedValue(1);
 
+  // Custom hooks
+  const modeOptions = useModeOptions(t, language);
+  const { handlePlay, handleChallenge, handleDuel } = useGameNavigation(onNavigate);
+
+  // 🔥 Firebase hooks
+  const { recentOpponents, loading: opponentsLoading } = useRecentOpponentsFirebase(3);
+  const { friends, loading: friendsLoading } = useFriendsFirebase();
+  const { randomPlayers, loading: playersLoading } = useRandomPlayersFirebase(5);
+  const isLoading = opponentsLoading || friendsLoading || playersLoading;
+
+  // Pré-binder les handlers
+  const recentOpponentsWithHandlers = useMemo(
+    () => recentOpponents.map(opponent => ({
+      ...opponent,
+      onChallenge: () => handleChallenge(opponent.name, opponent.countryCode),
+    })),
+    [recentOpponents, handleChallenge]
+  );
+
+  const friendsWithHandlers = useMemo(
+    () => friends.map(friend => ({
+      ...friend,
+      onChallenge: () => handleChallenge(friend.name, friend.countryCode, friend.avatar),
+      onDuel: () => handleDuel(friend.name, friend.countryCode, friend.avatar),
+    })),
+    [friends, handleChallenge, handleDuel]
+  );
+
+  const randomPlayersWithHandlers = useMemo(
+    () => randomPlayers.map(player => ({
+      ...player,
+      onChallenge: () => handleChallenge(player.name, player.countryCode, player.avatar),
+      onDuel: () => handleDuel(player.name, player.countryCode, player.avatar),
+    })),
+    [randomPlayers, handleChallenge, handleDuel]
+  );
+
+  // Language toggle
+  const toggleLanguage = useCallback(() => {
+    const newLanguage = language === 'fr' ? 'en' : 'fr';
+    setLanguage(newLanguage);
+    AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newLanguage).catch(() => undefined);
+  }, [language, setLanguage]);
+
+  // Load language preference
   useEffect(() => {
     const loadLanguagePreference = async () => {
       try {
@@ -71,12 +105,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
     loadLanguagePreference();
   }, [setLanguage]);
 
-  const toggleLanguage = () => {
-    const newLanguage = language === 'fr' ? 'en' : 'fr';
-    setLanguage(newLanguage);
-    AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newLanguage).catch(() => undefined);
-  };
-
+  // Animations
   useEffect(() => {
     pulse.value = withRepeat(
       withSequence(
@@ -115,67 +144,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
     transform: [{ scale: pulse.value }],
   }));
 
-  const modeOptions: ModeOption[] = useMemo(
-    () => [
-      {
-        key: 'classic',
-        title: t.mode_classic,
-        description: t.mode_classic_desc,
-        accent: colors.gold,
-        background: colors.surface,
-        cta: t.play,
-        badge: t.ranked_mode_badge,
-      },
-      {
-        key: 'rapid',
-        title: t.mode_rapid,
-        description: t.mode_rapid_desc,
-        accent: '#F97316',
-        background: colors.surfaceAlt,
-        cta: t.start_duel,
-      },
-      {
-        key: 'daily',
-        title: t.mode_daily,
-        description: t.mode_daily_desc,
-        accent: '#38BDF8',
-        background: colors.surfaceMuted,
-        cta: t.view_daily_details,
-      },
-    ],
-    [t, colors]
-  );
-
-  const handlePlay = () => {
-    const config: GameConfig = { mode: selectedMode };
-    onNavigate(Screen.GAME, { gameConfig: config });
-  };
-
-  const handleChallenge = (name: string, countryCode?: string, avatar?: string) => {
-    const config: GameConfig = {
-      mode: 'classic',
-      opponent: {
-        id: `challenge-${name}-${Date.now()}`,
-        name,
-        countryCode: countryCode ?? 'FR',
-        avatar,
-      },
-    };
-    onNavigate(Screen.GAME, { gameConfig: config });
-  };
-
-  const handleDuel = (name: string, countryCode?: string, avatar?: string) => {
-    const config: GameConfig = {
-      mode: 'rapid',
-      opponent: {
-        id: `duel-${name}-${Date.now()}`,
-        name,
-        countryCode: countryCode ?? 'FR',
-        avatar,
-      },
-    };
-    onNavigate(Screen.GAME, { gameConfig: config });
-  };
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={styles.screen}>
@@ -186,37 +155,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
         onScroll={scrollHandler}
         scrollEventThrottle={16}
       >
+        {/* Header */}
         <Animated.View style={[styles.headerRow, headerAnimatedStyle]}>
           <View style={styles.leftBadges}>
             <View style={styles.streakBadge}>
               <Text style={styles.streakValue}>{stats.currentStreak}</Text>
               <Text style={styles.streakLabel}>{t.streak}</Text>
             </View>
-            <View style={styles.chargesBadge}>
-              <Text style={styles.chargesValue}>
-                {formatCharges(stats.totalChargesEarned || 0)}⚡
+            <View style={styles.availableChargesBadge}>
+              <Text style={styles.availableChargesValue}>
+                {stats.availableCharges || 0}/{UI_CONSTANTS.MAX_CHARGES} ⚡
               </Text>
+              <Text style={styles.availableChargesLabel}>{t.charges}</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={themeToggleLabel}
-              onPress={toggle}
-              style={styles.themeToggle}
-            >
-              <Text style={styles.themeToggleIcon}>🌓</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel={t.toggle_language}
-              onPress={toggleLanguage}
-              style={styles.languageToggle}
-            >
-              <Text style={{ color: colors.primary, fontWeight: '700' }}>
-                {language.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel={t.view_stats}
@@ -233,14 +186,45 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                 </Text>
               </View>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t.toggle_language}
+              onPress={toggleLanguage}
+              style={styles.languageToggle}
+            >
+              <Text style={styles.languageText}>{language.toUpperCase()}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={language === 'fr' ? 'Changer de thème' : 'Toggle theme'}
+              onPress={toggle}
+              style={styles.themeToggle}
+            >
+              <Text style={styles.themeToggleIcon}>
+                {isDarkTheme ? '🌙' : '☀️'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={language === 'fr' ? 'Paramètres' : 'Settings'}
+              onPress={() => onNavigate(Screen.SETTINGS)}
+              style={styles.settingsButton}
+            >
+              <Text style={styles.settingsIcon}>⚙️</Text>
+            </TouchableOpacity>
           </View>
         </Animated.View>
 
+        {/* Hero */}
         <Animated.View style={[styles.hero, heroAnimatedStyle]}>
           <Text style={styles.heroTitle}>PUGNA REGALIS</Text>
-          <Text style={styles.heroSubtitle}>Edition Royale</Text>
+          <Text style={styles.heroSubtitle}>{t.edition_royale}</Text>
         </Animated.View>
 
+        {/* Mode Selector */}
         <View style={styles.modesSection}>
           {modeOptions.map((option, i) => (
             <Animated.View key={option.key} entering={FadeInDown.delay(i * 80)}>
@@ -249,8 +233,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                 style={[
                   styles.modeCard,
                   {
-                    backgroundColor: option.background,
-                    borderColor: selectedMode === option.key ? option.accent : 'transparent',
+                    backgroundColor: colors[option.backgroundKey],
+                    borderColor: selectedMode === option.key ? colors[option.accentKey] : 'transparent',
                   },
                   selectedMode === option.key && styles.modeCardActive,
                 ]}
@@ -269,7 +253,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
                 )}
                 <Text style={styles.modeCardDescription}>{option.description}</Text>
                 <View style={styles.modeCardFooter}>
-                  <Text style={[styles.modeCardCTA, { color: option.accent }]}>
+                  <Text style={[styles.modeCardCTA, { color: colors[option.accentKey] }]}>
                     {option.cta}
                   </Text>
                 </View>
@@ -277,135 +261,74 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate }) => {
             </Animated.View>
           ))}
           <Animated.View style={[styles.playButtonWrapper, ctaAnimatedStyle]}>
-            <Button onPress={handlePlay} size="lg" fullWidth>
-              <Text style={styles.playText}>
-                {selectedMode === 'rapid' ? t.start_duel : t.play}
+            <Button
+              onPress={selectedMode === 'daily' ? undefined : () => handlePlay(selectedMode)}
+              size="lg"
+              fullWidth
+              disabled={selectedMode === 'daily'}
+            >
+              <Text style={[
+                styles.playText,
+                selectedMode === 'daily' && { opacity: 0.5 }
+              ]}>
+                {selectedMode === 'daily'
+                  ? (language === 'fr' ? 'Bientôt disponible' : 'Coming Soon')
+                  : (selectedMode === 'rapid' ? t.start_duel : t.play)
+                }
               </Text>
             </Button>
           </Animated.View>
         </View>
 
+        {/* Recent Opponents */}
+        {recentOpponents.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t.recent_opponents}</Text>
+            </View>
+            <View style={styles.listContentSpacing}>
+              {recentOpponentsWithHandlers.map((item, index) => (
+                <RecentOpponentRow
+                  key={`recent-${item.matchId}-${item.date}`}
+                  item={item}
+                  index={index}
+                />
+              ))}
+            </View>
+            <View style={styles.sectionDivider} />
+          </>
+        )}
+
+        {/* Friends List */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t.friends_online}</Text>
           <Text style={styles.sectionAction}>{t.see_all}</Text>
         </View>
-        {MOCK_FRIENDS.map((friend, index) => (
-          <Animated.View
-            key={friend.id}
-            entering={FadeInDown.delay(200 + index * 70)}
-            style={{ width: '100%' }}
-          >
-            <View
-              style={[
-                styles.friendRow,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.surfaceAlt,
-                },
-              ]}
-            >
-              <View style={styles.friendInfo}>
-                <Image
-                  source={
-                    friend.avatar?.startsWith('http')
-                      ? { uri: friend.avatar }
-                      : placeholderAvatar
-                  }
-                  style={styles.friendAvatar}
-                />
-                <View>
-                  <Text style={styles.friendName}>{friend.name}</Text>
-                  <Text style={styles.friendStatus}>
-                    {friend.status === 'In Game'
-                      ? t.in_game
-                      : friend.status === 'Online'
-                        ? t.online
-                        : t.offline}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.actionButtons}>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onPress={() => handleDuel(friend.name, friend.countryCode, friend.avatar)}
-                >
-                  <Text style={styles.duelText}>{t.duel}</Text>
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onPress={() => handleChallenge(friend.name, friend.countryCode, friend.avatar)}
-                >
-                  <Text style={styles.challengeText}>{t.challenge}</Text>
-                </Button>
-              </View>
-            </View>
-          </Animated.View>
-        ))}
+        <View style={styles.listContentSpacing}>
+          {friendsWithHandlers.map((item, index) => (
+            <FriendRow
+              key={item.id}
+              item={item}
+              index={index}
+            />
+          ))}
+        </View>
         <View style={styles.sectionDivider} />
+
+        {/* Random Players */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{t.random_encounters}</Text>
           <Text style={styles.sectionAction}>{t.refresh}</Text>
         </View>
-        {MOCK_RANDOM_PLAYERS.map((player, index) => (
-          <Animated.View
-            key={player.id}
-            entering={FadeInDown.delay(400 + index * 70)}
-            style={{ width: '100%' }}
-          >
-            <View
-              style={[
-                styles.randomRow,
-                {
-                  backgroundColor: colors.surfaceMuted,
-                  borderColor: colors.surfaceAlt,
-                },
-              ]}
-            >
-              <View style={styles.randomInfo}>
-                <Image
-                  source={
-                    player.avatar?.startsWith('http')
-                      ? { uri: player.avatar }
-                      : placeholderAvatar
-                  }
-                  style={styles.randomAvatar}
-                />
-                <View>
-                  <View style={styles.randomNameRow}>
-                    <Text style={styles.randomName}>{player.name}</Text>
-                    <Text style={styles.randomFlag}>
-                      {getFlagEmoji(player.countryCode) ?? '🏳️'}
-                    </Text>
-                  </View>
-                  <Text style={styles.randomMeta}>
-                    {`${player.mode} · ${player.timeAgo}`}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.randomRight}>
-                <Text style={styles.randomElo}>{player.elo} ELO</Text>
-                <View style={styles.actionButtons}>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onPress={() => handleDuel(player.name, player.countryCode, player.avatar)}
-                  >
-                    <Text style={styles.duelText}>{t.duel}</Text>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onPress={() => handleChallenge(player.name, player.countryCode, player.avatar)}
-                  >
-                    <Text style={styles.challengeText}>{t.challenge}</Text>
-                  </Button>
-                </View>
-              </View>
-            </View>
-          </Animated.View>
-        ))}
+        <View style={styles.listContentSpacing}>
+          {randomPlayersWithHandlers.map((item, index) => (
+            <RandomPlayerRow
+              key={item.id}
+              item={item}
+              index={index}
+            />
+          ))}
+        </View>
       </Animated.ScrollView>
     </View>
   );
@@ -424,24 +347,24 @@ const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.background,
       paddingHorizontal: 16,
       paddingTop: 24,
-      paddingBottom: 48,
+      paddingBottom: UI_CONSTANTS.SPACING_LARGE,
     },
     headerRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 24,
+      marginBottom: UI_CONSTANTS.SPACING_MEDIUM,
     },
     leftBadges: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: UI_CONSTANTS.SPACING_TINY,
     },
     streakBadge: {
       backgroundColor: colors.surfaceAlt,
       paddingHorizontal: 16,
       paddingVertical: 8,
-      borderRadius: 999,
+      borderRadius: UI_CONSTANTS.BORDER_RADIUS_FULL,
     },
     streakValue: {
       color: '#F97316',
@@ -452,38 +375,54 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.textSecondary,
       fontSize: 12,
     },
-    chargesBadge: {
+    availableChargesBadge: {
       backgroundColor: colors.surfaceAlt,
-      paddingHorizontal: 12,
+      paddingHorizontal: UI_CONSTANTS.SPACING_SMALL,
       paddingVertical: 8,
-      borderRadius: 999,
+      borderRadius: UI_CONSTANTS.BORDER_RADIUS_FULL,
+      borderWidth: 2,
+      borderColor: '#3B82F6',
     },
-    chargesValue: {
-      color: '#FBBF24',
+    availableChargesValue: {
+      color: '#3B82F6',
       fontWeight: '900',
       fontSize: 16,
+    },
+    availableChargesLabel: {
+      color: colors.textSecondary,
+      fontSize: 10,
     },
     headerRight: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: UI_CONSTANTS.SPACING_SMALL,
+    },
+    settingsButton: {
+      paddingHorizontal: UI_CONSTANTS.SPACING_SMALL,
+      paddingVertical: 6,
+      borderRadius: UI_CONSTANTS.BORDER_RADIUS_FULL,
+      backgroundColor: colors.surfaceAlt,
+    },
+    settingsIcon: {
+      fontSize: 20,
     },
     themeToggle: {
-      paddingHorizontal: 12,
+      paddingHorizontal: UI_CONSTANTS.SPACING_SMALL,
       paddingVertical: 6,
-      borderRadius: 999,
+      borderRadius: UI_CONSTANTS.BORDER_RADIUS_FULL,
       backgroundColor: colors.surfaceAlt,
-      marginRight: 12,
+      marginRight: UI_CONSTANTS.SPACING_SMALL,
     },
     themeToggleIcon: {
       color: colors.primary,
       fontSize: 16,
     },
     languageToggle: {
-      paddingHorizontal: 12,
+      paddingHorizontal: UI_CONSTANTS.SPACING_SMALL,
       paddingVertical: 6,
-      borderRadius: 999,
+      borderRadius: UI_CONSTANTS.BORDER_RADIUS_FULL,
       backgroundColor: colors.surfaceAlt,
-      marginRight: 12,
+      marginRight: UI_CONSTANTS.SPACING_SMALL,
     },
     languageText: {
       color: colors.gold,
@@ -517,7 +456,7 @@ const createStyles = (colors: ThemeColors) =>
     },
     hero: {
       alignItems: 'center',
-      marginBottom: 24,
+      marginBottom: UI_CONSTANTS.SPACING_MEDIUM,
     },
     heroTitle: {
       fontSize: 36,
@@ -529,20 +468,19 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 14,
     },
     modesSection: {
-      marginBottom: 24,
-      gap: 12,
+      marginBottom: UI_CONSTANTS.SPACING_MEDIUM,
+      gap: UI_CONSTANTS.SPACING_SMALL,
     },
     playButtonWrapper: {
       marginTop: 4,
     },
     modeCard: {
       borderWidth: 1,
-      borderRadius: 20,
+      borderRadius: UI_CONSTANTS.BORDER_RADIUS_CARD,
       padding: 16,
-      marginBottom: 12,
+      marginBottom: UI_CONSTANTS.SPACING_SMALL,
     },
     modeCardActive: {
-      borderColor: colors.gold,
       shadowColor: colors.gold,
       shadowOpacity: 0.4,
       shadowRadius: 10,
@@ -568,7 +506,7 @@ const createStyles = (colors: ThemeColors) =>
     modeCardDescription: {
       color: colors.textSecondary,
       fontSize: 14,
-      marginBottom: 12,
+      marginBottom: UI_CONSTANTS.SPACING_SMALL,
     },
     modeCardFooter: {
       flexDirection: 'row',
@@ -582,7 +520,7 @@ const createStyles = (colors: ThemeColors) =>
       borderWidth: 1,
       paddingHorizontal: 10,
       paddingVertical: 4,
-      borderRadius: 999,
+      borderRadius: UI_CONSTANTS.BORDER_RADIUS_FULL,
       marginBottom: 10,
     },
     modeInfoBadgeText: {
@@ -614,106 +552,12 @@ const createStyles = (colors: ThemeColors) =>
       color: colors.gold,
       fontSize: 12,
     },
-    socialList: {
-      flex: 1,
-    },
-    socialContent: {
-      paddingBottom: 24,
-    },
     sectionDivider: {
       height: 1,
       backgroundColor: colors.surfaceAlt,
-      marginVertical: 12,
+      marginVertical: UI_CONSTANTS.SPACING_SMALL,
     },
-    friendRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      backgroundColor: colors.surface,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.surfaceAlt,
-      marginBottom: 8,
-    },
-    friendInfo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    friendAvatar: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      marginRight: 12,
-    },
-    friendName: {
-      color: colors.text,
-      fontWeight: '700',
-    },
-    friendStatus: {
-      color: colors.textSecondary,
-      fontSize: 12,
-    },
-    actionButtons: {
-      flexDirection: 'row',
-      gap: 8,
-    },
-    duelText: {
-      color: '#F97316',
-      fontSize: 12,
-      fontWeight: '700',
-    },
-    challengeText: {
-      color: colors.gold,
-      fontSize: 12,
-      fontWeight: '700',
-    },
-    randomRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 12,
-      paddingVertical: 12,
-      backgroundColor: colors.surfaceMuted,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.surfaceAlt,
-      marginBottom: 8,
-    },
-    randomInfo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
-    },
-    randomAvatar: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      marginRight: 12,
-    },
-    randomNameRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    randomName: {
-      color: colors.text,
-      fontWeight: '700',
-      marginRight: 6,
-    },
-    randomFlag: {
-      fontSize: 16,
-    },
-    randomMeta: {
-      color: colors.textSecondary,
-      fontSize: 12,
-    },
-    randomRight: {
-      alignItems: 'flex-end',
-      gap: 6,
-    },
-    randomElo: {
-      color: colors.gold,
-      fontWeight: '700',
+    listContentSpacing: {
+      gap: UI_CONSTANTS.SPACING_TINY,
     },
   });

@@ -1,0 +1,218 @@
+# =========================
+# .windsurfrules — IronHeart RN (v1)
+# But : empêcher la dérive, garantir une progression “walking skeleton”
+# =========================
+
+[DISCUSSION]
+"Ne pas être trop verbeux et éviter les commentaires superflus."
+"Pas de création de résumé de conversation et de chat."
+"Pas de création de mémoire de conversation et de chat sauf si demandé par le client."
+"Pas de création de guide de développement."
+"Ne pas être buté dans la recherche de bug, essayer de nouvelles approches."
+"Ne pas créer sans cesse des .md sans avoir demandé la permission."
+"Ne pas décider quand il faut arrêter de travailler."
+[TOKEN_ECONOMY]
+RULES = [
+  "Réponses < 50 lignes sauf code complexe",
+  "Pas de répétition du problème si déjà compris",
+  "Pas de longues explications si solution directe existe",
+  "Code direct sans préambule ('Voici...', 'Je vais...', etc.)",
+  "Pas de résumé en fin de réponse si action claire",
+  "Utiliser grep/read avant multi_edit (éviter lecture inutile)",
+  "1 seul fichier seed au lieu de multiples versions",
+  "Pas de markdown formaté excessif (emojis, tables, etc.)",
+  "Si erreur : solution uniquement, pas d'analyse longue",
+  "Jamais refaire un fichier complet, edit ciblé uniquement"
+]
+
+FORBIDDEN = [
+  "Reformuler la demande utilisateur",
+  "Expliquer pourquoi tu fais X si évident",
+  "Créer 5 fichiers 'test_v1, test_v2...' au lieu de 1",
+  "Longs diagnostics si solution simple existe",
+  "Conversations 'Tu veux que je...' (fait direct)"
+]
+
+PATTERN = "Lit erreur → Edit précis → Confirme succès (3 lignes max)"
+
+[PROJECT.Scope]
+# Produit = appli de rencontre “classique” (romance) + module optionnel “amitié/RPG”.
+# Livrables M0→M3 : Auth → Profil → Swipe/Match → Chat. Le RPG vient APRES M3.
+GOALS = [
+  "Livrer un flux complet Auth → Profil → Découverte/Swipe → Match auto → Conversation",
+  "Isolation stricte du module RPG/‘friendship’ par contexte, sans impacter le cœur ‘romance’",
+  "Types générés depuis la DB ; aucune chaîne magique pour les tables/colonnes"
+]
+NON_GOALS = [
+  "Pas de géolocalisation/PostGIS à M0–M3",
+  "Pas de notifications push ni upload multi-photos à M0",
+  "Pas de refonte SQL hors périmètre défini (voir Invariants SQL)"
+]
+PRIORITIES = ["Fiabilité RLS", "Types stricts", "UX simple", "End-to-end minimal"]
+
+[STACK.Runtime]
+MOBILE = "React Native + Expo (SDK 54)"
+LANG    = "TypeScript strict"
+STATE   = "Hooks locaux ; aucun état global tant que non requis"
+NAV     = "expo-router"
+API     = "supabase-js (RN polyfills)"
+STORAGE = "AsyncStorage (session), Storage bucket 'profile-photos' (public)"
+PM      = "npm (utiliser `expo install` pour modules natifs)"
+WEB     = "Hors périmètre (ne pas viser Web tant que mobile non stabilisé)"
+
+[ENV.Vars]
+REQUIRED = [
+  "EXPO_PUBLIC_SUPABASE_URL",
+  "EXPO_PUBLIC_SUPABASE_ANON_KEY"
+]
+RULES = [
+  "Jamais de secret dans le code ou dans le repo",
+  "Chargement via dotenv/expo (app.config.js/app.json ⇄ process.env)"
+]
+
+[ARCHI.Dossiers]
+KEEP = [
+  "app/(auth)/signin.tsx",
+  "app/(auth)/signup.tsx",
+  "app/(onboarding)/profile.tsx",
+  "app/(tabs)/discover.tsx",
+  "app/(tabs)/matches.tsx",
+  "app/chat/[id].tsx",
+  "src/lib/supabase.ts",
+  "src/lib/db.types.ts",
+  "src/features/{profile,discovery,chat}/",
+  "src/ui/components/*"
+]
+RULES = [
+  "Le module RPG vit dans src/features/rpg/ et des écrans app/(rpg)/*",
+  "Interdiction d’importer rpg/* depuis discovery/* (couplage unidirectionnel : core → rpg = NON)"
+]
+
+[DB.InvariantsSQL]
+# Source de vérité = schéma minimal fourni (profiles, swipes, matches, conversations, messages)
+# Colonne ‘context’ = ENUM app_context('romance','friendship') — ne JAMAIS revenir à TEXT.
+ENUMS = ["app_context('romance','friendship')"]
+TABLES = ["profiles","swipes","matches","conversations","messages"]
+RLS = [
+  "Toute lecture/écriture passe par supabase-js avec session JWT",
+  "Aucun fetch direct sur /rest/v1 (POSTGREST) en dur"
+]
+VIEWS = [
+  "Si vues filtrées (rom_swipes/fri_swipes) sont ajoutées, elles ne servent qu’au READ"
+]
+MIGRATIONS = [
+  "Toute évolution SQL va dans supabase/migrations ; pas de DDL improvisé depuis l’app"
+]
+
+[API.Usage]
+ALLOWED = [
+  "supabase.auth.*",
+  "supabase.from('profiles'|'swipes'|'matches'|'conversations'|'messages')",
+  "storage.from('profile-photos')"
+]
+FORBIDDEN = [
+  "fetch('.../rest/v1/...')",
+  "Requêtes sans typer les retours avec db.types"
+]
+PATTERNS = [
+  "Importer 'react-native-url-polyfill/auto' dans src/lib/supabase.ts",
+  "Client Supabase unique (singleton), session persistée via AsyncStorage",
+  "Générer types : `supabase gen types typescript > src/lib/db.types.ts`"
+]
+
+[UX.DoD]  # Definition of Done par étape
+M0 = [
+  "L’app démarre, routes auth OK, .env chargé",
+  "Linter/TS passent, build Expo OK"
+]
+M1 = [
+  "Login/Signup (email + password)",
+  "Session persistée (relog = auto)"
+]
+M2 = [
+  "Création/édition profil (name, birthdate, photo_url) + upload 1 photo",
+  "Lecture self profile après relog"
+]
+M3 = [
+  "Découverte : FlatList cartes simples",
+  "Swipe = insert swipes(liked=true|false)",
+  "Réciprocité → insertion auto match + conversation",
+  "Chat texte fonctionnel entre 2 utilisateurs"
+]
+RPG_NEXT = [
+  "Bascule de contexte via ENUM app_context='friendship'",
+  "Onboarding/metrics RPG isolés (tables dédiées, pas d’intrusion dans core)"
+]
+
+[STYLE.Code]
+TS = [
+  "strict: true, noImplicitAny: true",
+  "Pas d'any, pas de // @ts-ignore (sauf justification TODO et ticket)"
+]
+ESLINT = [
+  "@react-native/eslint-config",
+  "Aucune erreur lint à la CI"
+]
+UI = [
+  "Composants RN natifs (StyleSheet) ; pas de libs UI lourdes au M0–M3",
+  "États : loading/empty/error obligatoires sur chaque écran de données"
+]
+DATA = [
+  "Aucune string de table en dur hors ‘tables.ts’ centralisé",
+  "Préférer select({ typed columns }) plutôt que '*'",
+  "Contrôler les erreurs Supabase (error != null → UI lisible)"
+]
+
+[COMMITS]
+CONV = [
+  "feat: ... | fix: ... | chore: ... | refactor: ... | docs: ... | test: ...",
+  "1 scope par commit ; PR < 300 lignes"
+]
+
+[TESTS]
+MIN = [
+  "Smoke test manuel : Auth → Profil → Swipe/Match → Chat sur 2 comptes",
+  "Script Node de test e2e REST (supabase-js) autorisé dans /scripts (pas dans app)"
+]
+
+[PERF/Sécu]
+RULES = [
+  "Pas de debounce hasardeux sur les writes (swipe/chat) ; respecter l’UX réactive",
+  "Jamais de désactivation RLS",
+  "Uploads : <2MB/photo, bucket public, nommage {userId}/main.jpg"
+]
+
+[WORKFLOW]
+ORDER = [
+  "1) scaffolding RN/Expo + supabase.ts + env",
+  "2) Auth",
+  "3) Profil + upload",
+  "4) Swipes + trigger match/conversation",
+  "5) Chat",
+  "6) Intégration RPG (contexte 'friendship')"
+]
+GUARDRAILS = [
+  "Si une tâche nécessite de toucher au SQL, créer migration + regénérer types",
+  "Si une dépendance Web (react-dom) apparaît, ne pas l’installer ; Mobile d’abord"
+]
+
+[REVIEW.Checklist]
+PR = [
+  "Respect du périmètre Mx",
+  "Aucun fetch /rest/v1",
+  "Types alignés (src/lib/db.types.ts régénéré si SQL bouge)",
+  "Comportements d’erreur gérés (UI)",
+  "Pas de couplage discovery ↔ rpg"
+]
+[GEO.Policy]
+DECISION = "Toujours PostGIS (geography), jamais de Haversine côté app."
+STORAGE  = "Colonnes geography(Point,4326) + index GiST"
+QUERIES  = "Proximité via ST_DWithin(geog, geog, meters). Distance via ST_Distance(geography)"
+PRIVACY  = "Ne jamais exposer les coordonnées brutes d’un tiers ; publier seulement distance_km arrondie et user_id/public fields"
+API      = "Passer par des RPC sécurisées (SECURITY DEFINER + SET search_path=public,pg_temp)"
+RLS      = "Le demandeur doit être auth.uid(); filtres de contexte via ENUM app_context"
+
+[Icons]
+Ne jamais utiliser des icônes emoji
+Privilégier les icônes lucide
+Privilégier les icônes svg
