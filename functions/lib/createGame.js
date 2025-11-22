@@ -113,6 +113,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
             lastActionAt: now,
             winner: null,
             defeatReason: null,
+            krakenEvent: null,
             createdAt: now,
             updatedAt: now,
         };

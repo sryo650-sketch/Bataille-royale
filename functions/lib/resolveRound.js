@@ -154,6 +154,33 @@ async function resolveRound(gameRef, game) {
                 functions.logger.info('Charges unlocked', { gameId: game.id, round: nextRoundCount });
             }
         }
+        // 🐙 KRAKEN : Tous les 15 rounds, dévorer la carte la plus faible de chaque deck
+        let krakenP1Card = null;
+        let krakenP2Card = null;
+        if (nextRoundCount % 15 === 0 && newPlayer1Deck.length > 0 && newPlayer2Deck.length > 0) {
+            // Trouver la carte la plus faible du deck de chaque joueur
+            const p1Ranks = newPlayer1Deck.map(cardId => (0, cardUtils_1.getCardById)(cardId).rank);
+            const p2Ranks = newPlayer2Deck.map(cardId => (0, cardUtils_1.getCardById)(cardId).rank);
+            const lowestP1Rank = Math.min(...p1Ranks);
+            const lowestP2Rank = Math.min(...p2Ranks);
+            // Trouver l'index de la première occurrence de cette carte
+            const p1IndexToRemove = newPlayer1Deck.findIndex(cardId => (0, cardUtils_1.getCardById)(cardId).rank === lowestP1Rank);
+            const p2IndexToRemove = newPlayer2Deck.findIndex(cardId => (0, cardUtils_1.getCardById)(cardId).rank === lowestP2Rank);
+            if (p1IndexToRemove !== -1) {
+                krakenP1Card = newPlayer1Deck[p1IndexToRemove];
+                newPlayer1Deck.splice(p1IndexToRemove, 1);
+            }
+            if (p2IndexToRemove !== -1) {
+                krakenP2Card = newPlayer2Deck[p2IndexToRemove];
+                newPlayer2Deck.splice(p2IndexToRemove, 1);
+            }
+            functions.logger.info('Kraken event triggered', {
+                gameId: game.id,
+                roundCount: nextRoundCount,
+                p1CardRemoved: krakenP1Card,
+                p2CardRemoved: krakenP2Card,
+            });
+        }
         // Mettre à jour l'état
         await gameRef.update({
             'player1.deck': newPlayer1Deck,
@@ -175,6 +202,7 @@ async function resolveRound(gameRef, game) {
             pot: newPot,
             phase: 'WAITING',
             roundCount: nextRoundCount,
+            krakenEvent: (krakenP1Card || krakenP2Card) ? { p1Card: krakenP1Card, p2Card: krakenP2Card } : null,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
         functions.logger.info('Next round prepared', {

@@ -20,3 +20,123 @@
 [debug] [2025-11-22T14:09:04.309Z] Checked if tokens are valid: true, expires at: 1763821810700
 [debug] [2025-11-22T14:09:04.310Z] >>> [apiv2][query] POST https://iam.googleapis.com/v1/projects/pugna-regalis/serviceAccounts/pugna-regalis@appspot.gserviceaccount.com:testIamPermissions [none]
 [debug] [2025-11-22T14:09:04.310Z] >>> [apiv2][body] POST https://iam.googleapis.com/v1/projects/pugna-regalis/serviceAccounts/pugna-regalis@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[debug] [2025-11-22T14:09:04.925Z] <<< [apiv2][status] POST https://iam.googleapis.com/v1/projects/pugna-regalis/serviceAccounts/pugna-regalis@appspot.gserviceaccount.com:testIamPermissions 200
+[debug] [2025-11-22T14:09:04.925Z] <<< [apiv2][body] POST https://iam.googleapis.com/v1/projects/pugna-regalis/serviceAccounts/pugna-regalis@appspot.gserviceaccount.com:testIamPermissions {"permissions":["iam.serviceAccounts.actAs"]}
+[info] 
+[info] === Deploying to 'pugna-regalis'...
+[info] 
+[info] i  deploying functions 
+[info] Running command: npm --prefix "$RESOURCE_DIR" run build
+[info] +  functions: Finished running predeploy script. 
+[debug] [2025-11-22T14:09:07.924Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:07.924Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:07.925Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis [none]
+[debug] [2025-11-22T14:09:08.081Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis 200
+[debug] [2025-11-22T14:09:08.081Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis {"projectNumber":"1040033793128","projectId":"pugna-regalis","lifecycleState":"ACTIVE","name":"Pugna-regalis","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-11-21T18:02:16.452825Z"}
+[info] i  functions: preparing codebase default for deployment 
+[info] i  functions: ensuring required API cloudfunctions.googleapis.com is enabled... 
+[info] i  functions: ensuring required API cloudbuild.googleapis.com is enabled... 
+[info] i  artifactregistry: ensuring required API artifactregistry.googleapis.com is enabled... 
+[debug] [2025-11-22T14:09:08.084Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:08.084Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:08.084Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/pugna-regalis/adminSdkConfig [none]
+[debug] [2025-11-22T14:09:08.306Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/pugna-regalis/adminSdkConfig 200
+[debug] [2025-11-22T14:09:08.306Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/pugna-regalis/adminSdkConfig {"projectId":"pugna-regalis","storageBucket":"pugna-regalis.firebasestorage.app"}
+[debug] [2025-11-22T14:09:08.306Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:08.306Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:08.307Z] >>> [apiv2][query] GET https://runtimeconfig.googleapis.com/v1beta1/projects/pugna-regalis/configs [none]
+[debug] [2025-11-22T14:09:08.529Z] <<< [apiv2][status] GET https://runtimeconfig.googleapis.com/v1beta1/projects/pugna-regalis/configs 200
+[debug] [2025-11-22T14:09:08.529Z] <<< [apiv2][body] GET https://runtimeconfig.googleapis.com/v1beta1/projects/pugna-regalis/configs {}
+[debug] [2025-11-22T14:09:08.530Z] Validating nodejs source
+[warn] !  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory. 
+[warn] !  functions: Please note that there will be breaking changes when you upgrade. 
+[debug] [2025-11-22T14:09:09.474Z] > [functions] package.json contents: {
+  "name": "functions",
+  "version": "1.0.0",
+  "description": "Cloud Functions for Bataille Royale",
+  "scripts": {
+    "build": "tsc",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+}
+[debug] [2025-11-22T14:09:09.475Z] Building nodejs source
+[info] i  functions: Loading and analyzing source code for codebase default to determine what to deploy 
+[debug] [2025-11-22T14:09:09.476Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-11-22T14:09:09.490Z] Found firebase-functions binary at 'D:\GIT\bataille-royale\mobile\functions\node_modules\.bin\firebase-functions'
+[info] Serving at port 8860
+
+[debug] [2025-11-22T14:09:10.221Z] Got response from /__/functions.yaml {"endpoints":{"createGame":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"createGame"},"lockCard":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"lockCard"},"useSpecial":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"useSpecial"},"surrender":{"platform":"gcfv1","labels":{},"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"serviceAccountEmail":null,"vpc":null,"callableTrigger":{},"entryPoint":"surrender"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] i  extensions: ensuring required API firebaseextensions.googleapis.com is enabled... 
+[debug] [2025-11-22T14:09:14.262Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-11-22T14:09:14.262Z] > authorizing via signed-in user (sryo650@gmail.com)
+[debug] [2025-11-22T14:09:14.263Z] [iam] checking project pugna-regalis for permissions ["firebase.projects.get","firebaseextensions.instances.list"]
+[debug] [2025-11-22T14:09:14.263Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:14.263Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:14.263Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis:testIamPermissions [none]
+[debug] [2025-11-22T14:09:14.263Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis:testIamPermissions x-goog-quota-user=projects/pugna-regalis
+[debug] [2025-11-22T14:09:14.263Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis:testIamPermissions {"permissions":["firebase.projects.get","firebaseextensions.instances.list"]}
+[debug] [2025-11-22T14:09:14.874Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis:testIamPermissions 200
+[debug] [2025-11-22T14:09:14.874Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis:testIamPermissions {"permissions":["firebase.projects.get","firebaseextensions.instances.list"]}
+[debug] [2025-11-22T14:09:14.875Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:14.875Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:14.875Z] >>> [apiv2][query] GET https://firebaseextensions.googleapis.com/v1beta/projects/pugna-regalis/instances pageSize=100&pageToken=
+[debug] [2025-11-22T14:09:15.604Z] <<< [apiv2][status] GET https://firebaseextensions.googleapis.com/v1beta/projects/pugna-regalis/instances 200
+[debug] [2025-11-22T14:09:15.604Z] <<< [apiv2][body] GET https://firebaseextensions.googleapis.com/v1beta/projects/pugna-regalis/instances {}
+[info] i  functions: preparing functions directory for uploading... 
+[info] i  functions: packaged D:\GIT\bataille-royale\mobile\functions (115.43 KB) for uploading 
+[debug] [2025-11-22T14:09:15.670Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:15.670Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:15.670Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v1/projects/pugna-regalis/locations/-/functions [none]
+[debug] [2025-11-22T14:09:16.244Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v1/projects/pugna-regalis/locations/-/functions 200
+[debug] [2025-11-22T14:09:16.244Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v1/projects/pugna-regalis/locations/-/functions {"functions":[{"name":"projects/pugna-regalis/locations/us-central1/functions/surrender","httpsTrigger":{"url":"https://us-central1-pugna-regalis.cloudfunctions.net/surrender","securityLevel":"SECURE_ALWAYS"},"status":"ACTIVE","entryPoint":"surrender","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"pugna-regalis@appspot.gserviceaccount.com","updateTime":"2025-11-22T13:32:26.249Z","versionId":"5","labels":{"firebase-functions-hash":"8ea6e4911480e36e78c8ed6e88eec71526a60de5","deployment-tool":"cli-firebase","deployment-callable":"true"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/28834167-0060-4260-8c87-9b33ae04ce4b.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"pugna-regalis\",\"storageBucket\":\"pugna-regalis.firebasestorage.app\"}","GCLOUD_PROJECT":"pugna-regalis","EVENTARC_CLOUD_EVENT_SOURCE":"projects/pugna-regalis/locations/us-central1/functions/surrender"},"runtime":"nodejs20","ingressSettings":"ALLOW_ALL","buildId":"fcccfaca-48cd-4e5e-9a08-148dae401045","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/1040033793128/locations/us-central1/builds/fcccfaca-48cd-4e5e-9a08-148dae401045","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"buildServiceAccount":"projects/pugna-regalis/serviceAccounts/1040033793128-compute@developer.gserviceaccount.com","satisfiesPzi":true},{"name":"projects/pugna-regalis/locations/us-central1/functions/createGame","httpsTrigger":{"url":"https://us-central1-pugna-regalis.cloudfunctions.net/createGame","securityLevel":"SECURE_ALWAYS"},"status":"ACTIVE","entryPoint":"createGame","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"pugna-regalis@appspot.gserviceaccount.com","updateTime":"2025-11-22T13:32:21.138Z","versionId":"7","labels":{"deployment-callable":"true","firebase-functions-hash":"8ea6e4911480e36e78c8ed6e88eec71526a60de5","deployment-tool":"cli-firebase"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/28834167-0060-4260-8c87-9b33ae04ce4b.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"pugna-regalis\",\"storageBucket\":\"pugna-regalis.firebasestorage.app\"}","GCLOUD_PROJECT":"pugna-regalis","EVENTARC_CLOUD_EVENT_SOURCE":"projects/pugna-regalis/locations/us-central1/functions/createGame"},"runtime":"nodejs20","ingressSettings":"ALLOW_ALL","buildId":"fcccfaca-48cd-4e5e-9a08-148dae401045","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/1040033793128/locations/us-central1/builds/fcccfaca-48cd-4e5e-9a08-148dae401045","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"buildServiceAccount":"projects/pugna-regalis/serviceAccounts/1040033793128-compute@developer.gserviceaccount.com","satisfiesPzi":true},{"name":"projects/pugna-regalis/locations/us-central1/functions/lockCard","httpsTrigger":{"url":"https://us-central1-pugna-regalis.cloudfunctions.net/lockCard","securityLevel":"SECURE_ALWAYS"},"status":"ACTIVE","entryPoint":"lockCard","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"pugna-regalis@appspot.gserviceaccount.com","updateTime":"2025-11-22T13:32:25.296Z","versionId":"9","labels":{"deployment-callable":"true","firebase-functions-hash":"8ea6e4911480e36e78c8ed6e88eec71526a60de5","deployment-tool":"cli-firebase"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/28834167-0060-4260-8c87-9b33ae04ce4b.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"pugna-regalis\",\"storageBucket\":\"pugna-regalis.firebasestorage.app\"}","GCLOUD_PROJECT":"pugna-regalis","EVENTARC_CLOUD_EVENT_SOURCE":"projects/pugna-regalis/locations/us-central1/functions/lockCard"},"runtime":"nodejs20","ingressSettings":"ALLOW_ALL","buildId":"fcccfaca-48cd-4e5e-9a08-148dae401045","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/1040033793128/locations/us-central1/builds/fcccfaca-48cd-4e5e-9a08-148dae401045","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"buildServiceAccount":"projects/pugna-regalis/serviceAccounts/1040033793128-compute@developer.gserviceaccount.com","satisfiesPzi":true},{"name":"projects/pugna-regalis/locations/us-central1/functions/checkInactivity","eventTrigger":{"eventType":"google.pubsub.topic.publish","resource":"projects/pugna-regalis/topics/firebase-schedule-checkInactivity-us-central1","service":"pubsub.googleapis.com","failurePolicy":{}},"status":"ACTIVE","entryPoint":"checkInactivity","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"pugna-regalis@appspot.gserviceaccount.com","updateTime":"2025-11-21T21:30:08.177370806Z","versionId":"1","labels":{"deployment-tool":"cli-firebase","deployment-scheduled":"true","firebase-functions-hash":"af3c0cdbd650589a245e202a5644f72d69deec8f"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/90438cbb-4e73-4d6a-a5d9-7218b2cf08e4.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"pugna-regalis\",\"storageBucket\":\"pugna-regalis.firebasestorage.app\"}","GCLOUD_PROJECT":"pugna-regalis","EVENTARC_CLOUD_EVENT_SOURCE":"projects/pugna-regalis/locations/us-central1/functions/checkInactivity"},"runtime":"nodejs20","maxInstances":3000,"ingressSettings":"ALLOW_ALL","buildId":"1cb6176c-ffc4-4cf0-ade9-f25a600ef888","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/1040033793128/locations/us-central1/builds/1cb6176c-ffc4-4cf0-ade9-f25a600ef888","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"buildServiceAccount":"projects/pugna-regalis/serviceAccounts/1040033793128-compute@developer.gserviceaccount.com","satisfiesPzi":true},{"name":"projects/pugna-regalis/locations/us-central1/functions/updateRapidTimer","eventTrigger":{"eventType":"google.pubsub.topic.publish","resource":"projects/pugna-regalis/topics/firebase-schedule-updateRapidTimer-us-central1","service":"pubsub.googleapis.com","failurePolicy":{}},"status":"ACTIVE","entryPoint":"updateRapidTimer","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"pugna-regalis@appspot.gserviceaccount.com","updateTime":"2025-11-21T21:30:14.304Z","versionId":"2","labels":{"deployment-tool":"cli-firebase","deployment-scheduled":"true","firebase-functions-hash":"af3c0cdbd650589a245e202a5644f72d69deec8f"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/90438cbb-4e73-4d6a-a5d9-7218b2cf08e4.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"pugna-regalis\",\"storageBucket\":\"pugna-regalis.firebasestorage.app\"}","GCLOUD_PROJECT":"pugna-regalis","EVENTARC_CLOUD_EVENT_SOURCE":"projects/pugna-regalis/locations/us-central1/functions/updateRapidTimer"},"runtime":"nodejs20","maxInstances":3000,"ingressSettings":"ALLOW_ALL","buildId":"1cb6176c-ffc4-4cf0-ade9-f25a600ef888","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/1040033793128/locations/us-central1/builds/1cb6176c-ffc4-4cf0-ade9-f25a600ef888","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"buildServiceAccount":"projects/pugna-regalis/serviceAccounts/1040033793128-compute@developer.gserviceaccount.com","satisfiesPzi":true},{"name":"projects/pugna-regalis/locations/us-central1/functions/useSpecial","httpsTrigger":{"url":"https://us-central1-pugna-regalis.cloudfunctions.net/useSpecial","securityLevel":"SECURE_ALWAYS"},"status":"ACTIVE","entryPoint":"useSpecial","timeout":"60s","availableMemoryMb":256,"serviceAccountEmail":"pugna-regalis@appspot.gserviceaccount.com","updateTime":"2025-11-22T13:32:24.627Z","versionId":"5","labels":{"deployment-tool":"cli-firebase","deployment-callable":"true","firebase-functions-hash":"8ea6e4911480e36e78c8ed6e88eec71526a60de5"},"sourceUploadUrl":"https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/28834167-0060-4260-8c87-9b33ae04ce4b.zip","environmentVariables":{"FIREBASE_CONFIG":"{\"projectId\":\"pugna-regalis\",\"storageBucket\":\"pugna-regalis.firebasestorage.app\"}","GCLOUD_PROJECT":"pugna-regalis","EVENTARC_CLOUD_EVENT_SOURCE":"projects/pugna-regalis/locations/us-central1/functions/useSpecial"},"runtime":"nodejs20","ingressSettings":"ALLOW_ALL","buildId":"fcccfaca-48cd-4e5e-9a08-148dae401045","buildEnvironmentVariables":{"GOOGLE_NODE_RUN_SCRIPTS":""},"buildName":"projects/1040033793128/locations/us-central1/builds/fcccfaca-48cd-4e5e-9a08-148dae401045","dockerRegistry":"ARTIFACT_REGISTRY","automaticUpdatePolicy":{},"buildServiceAccount":"projects/pugna-regalis/serviceAccounts/1040033793128-compute@developer.gserviceaccount.com","satisfiesPzi":true}]}
+[debug] [2025-11-22T14:09:16.245Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:16.245Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:16.245Z] >>> [apiv2][query] GET https://cloudfunctions.googleapis.com/v2/projects/pugna-regalis/locations/-/functions filter=environment%3D%22GEN_2%22
+[debug] [2025-11-22T14:09:16.714Z] <<< [apiv2][status] GET https://cloudfunctions.googleapis.com/v2/projects/pugna-regalis/locations/-/functions 200
+[debug] [2025-11-22T14:09:16.714Z] <<< [apiv2][body] GET https://cloudfunctions.googleapis.com/v2/projects/pugna-regalis/locations/-/functions {}
+[debug] [2025-11-22T14:09:16.717Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:16.717Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:16.717Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis [none]
+[debug] [2025-11-22T14:09:16.889Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis 200
+[debug] [2025-11-22T14:09:16.889Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/pugna-regalis {"projectNumber":"1040033793128","projectId":"pugna-regalis","lifecycleState":"ACTIVE","name":"Pugna-regalis","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-11-21T18:02:16.452825Z"}
+[debug] [2025-11-22T14:09:16.890Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:16.890Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:16.890Z] >>> [apiv2][query] GET https://cloudbilling.googleapis.com/v1/projects/pugna-regalis/billingInfo [none]
+[debug] [2025-11-22T14:09:17.117Z] <<< [apiv2][status] GET https://cloudbilling.googleapis.com/v1/projects/pugna-regalis/billingInfo 200
+[debug] [2025-11-22T14:09:17.117Z] <<< [apiv2][body] GET https://cloudbilling.googleapis.com/v1/projects/pugna-regalis/billingInfo {"name":"projects/pugna-regalis/billingInfo","projectId":"pugna-regalis","billingAccountName":"billingAccounts/01C404-9F42CE-9724B7","billingEnabled":true}
+[debug] [2025-11-22T14:09:17.118Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:17.119Z] Checked if tokens are valid: true, expires at: 1763821810700
+[debug] [2025-11-22T14:09:17.119Z] >>> [apiv2][query] POST https://cloudfunctions.googleapis.com/v1/projects/pugna-regalis/locations/us-central1/functions:generateUploadUrl [none]
+[debug] [2025-11-22T14:09:17.119Z] >>> [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/pugna-regalis/locations/us-central1/functions:generateUploadUrl {}
+[debug] [2025-11-22T14:09:17.732Z] <<< [apiv2][status] POST https://cloudfunctions.googleapis.com/v1/projects/pugna-regalis/locations/us-central1/functions:generateUploadUrl 200
+[debug] [2025-11-22T14:09:17.732Z] <<< [apiv2][body] POST https://cloudfunctions.googleapis.com/v1/projects/pugna-regalis/locations/us-central1/functions:generateUploadUrl {"uploadUrl":"https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/c74d846a-66b3-4342-ae1c-a5777d859370.zip?GoogleAccessId=service-1040033793128@gcf-admin-robot.iam.gserviceaccount.com&Expires=1763822356&Signature=iI0LGcBPGEdFDt4jQVIfagZ5rS5%2FrFc6JXHtsbl7haJT7SjBD7kNtco%2FXEJpnZBLooeKbSGwO6AbA2lhrAGdf6LU5rFm03oMAAdzkhGTr7F2ClLmz8FmQ9WBlcIsVZOg%2BS4zl9tkgq8QzNlr7m2ehrNHDeYlRnASREkoFh9XLa99Gc7qmA%2FOX7FzBaUCCke4EfHngp9kg1lXoJMOEUMIO8ThSf0QTBKTpKNBCDroeAAaj9%2FzBHmNYn8%2BDeN%2BjxTFHp%2Fw3JjtJiHPZPknmgpKlgI%2FDXeHDrfaTYjFQ4pLVJUhfcnayBA93C1z6gO1lhJ1FVFaLOqpwQCxDkx2JJJJ9g%3D%3D"}
+[debug] [2025-11-22T14:09:17.732Z] >>> [apiv2][query] PUT https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/c74d846a-66b3-4342-ae1c-a5777d859370.zip GoogleAccessId=service-1040033793128%40gcf-admin-robot.iam.gserviceaccount.com&Expires=1763822356&Signature=iI0LGcBPGEdFDt4jQVIfagZ5rS5%2FrFc6JXHtsbl7haJT7SjBD7kNtco%2FXEJpnZBLooeKbSGwO6AbA2lhrAGdf6LU5rFm03oMAAdzkhGTr7F2ClLmz8FmQ9WBlcIsVZOg%2BS4zl9tkgq8QzNlr7m2ehrNHDeYlRnASREkoFh9XLa99Gc7qmA%2FOX7FzBaUCCke4EfHngp9kg1lXoJMOEUMIO8ThSf0QTBKTpKNBCDroeAAaj9%2FzBHmNYn8%2BDeN%2BjxTFHp%2Fw3JjtJiHPZPknmgpKlgI%2FDXeHDrfaTYjFQ4pLVJUhfcnayBA93C1z6gO1lhJ1FVFaLOqpwQCxDkx2JJJJ9g%3D%3D
+[debug] [2025-11-22T14:09:17.732Z] >>> [apiv2][body] PUT https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/c74d846a-66b3-4342-ae1c-a5777d859370.zip [stream]
+[debug] [2025-11-22T14:09:18.243Z] <<< [apiv2][status] PUT https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/c74d846a-66b3-4342-ae1c-a5777d859370.zip 200
+[debug] [2025-11-22T14:09:18.243Z] <<< [apiv2][body] PUT https://storage.googleapis.com/uploads-242386605198.us-central1.cloudfunctions.appspot.com/c74d846a-66b3-4342-ae1c-a5777d859370.zip [omitted]
+[info] +  functions: functions source uploaded successfully 
+[info] 
+The following functions are found in your project but do not exist in your local source code:
+	checkInactivity(us-central1)
+	updateRapidTimer(us-central1)
+
+If you are renaming a function or changing its region, it is recommended that you create the new function first before deleting the old one to prevent event loss. For more info, visit https://firebase.google.com/docs/functions/manage-functions#modify
+

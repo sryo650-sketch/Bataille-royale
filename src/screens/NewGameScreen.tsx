@@ -71,7 +71,8 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
     mySpecial?: 'attack' | 'defense' | null;
     oppSpecial?: 'attack' | 'defense' | null;
   }>({});
-const prevRound = React.useRef(gameState?.roundCount ?? 0);
+  const [showKraken, setShowKraken] = useState(false); // Overlay visuel Kraken
+  const prevRound = React.useRef(gameState?.roundCount ?? 0);
   const lockingRef = React.useRef(false); // Protection double-clic
   
   // Flip Manuel
@@ -135,30 +136,15 @@ const prevRound = React.useRef(gameState?.roundCount ?? 0);
   // 🐙 Détection de l'événement Kraken
   useEffect(() => {
     if (gameState?.krakenEvent && (gameState.krakenEvent.p1Card || gameState.krakenEvent.p2Card)) {
-      const myCard = isPlayer1 ? gameState.krakenEvent.p1Card : gameState.krakenEvent.p2Card;
-      const oppCard = isPlayer1 ? gameState.krakenEvent.p2Card : gameState.krakenEvent.p1Card;
+      // Afficher l'overlay Kraken
+      setShowKraken(true);
       
-      const myCardData = myCard ? getCardById(myCard) : null;
-      const oppCardData = oppCard ? getCardById(oppCard) : null;
-      
+      // Masquer après 3 secondes
       setTimeout(() => {
-        const formatCard = (card: typeof myCardData) => {
-          if (!card) return 'une carte';
-          const suitEmoji: Record<string, string> = { H: '♥️', D: '♦️', C: '♣️', S: '♠️' };
-          const emoji = suitEmoji[card.suit as any] || '';
-          const rankName = ['', '', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Valet', 'Dame', 'Roi', 'As'][card.rank] || '';
-          return `${rankName} ${emoji}`;
-        };
-        
-        Alert.alert(
-          '🐙 KRAKEN',
-          `${opponent?.name || 'Adversaire'} a perdu ${formatCard(oppCardData)}\n` +
-          `Vous avez perdu ${formatCard(myCardData)}`,
-          [{ text: 'Continuer' }]
-        );
-      }, 1500);
+        setShowKraken(false);
+      }, 3000);
     }
-  }, [gameState?.krakenEvent, isPlayer1, opponent?.name]);
+  }, [gameState?.krakenEvent]);
 
   // Animation "Pulse" (Joueur seulement)
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
@@ -431,6 +417,46 @@ const prevRound = React.useRef(gameState?.roundCount ?? 0);
             {roundResult === 'win' ? 'Manche gagnée' : 'Manche perdue'}
           </ReanimatedAnimated.Text>
         )
+      )}
+
+      {/* 🐙 Overlay Kraken Attack */}
+      {showKraken && gameState?.krakenEvent && (
+        <ReanimatedAnimated.View 
+          entering={FadeIn.duration(500)}
+          exiting={FadeOut.duration(300)}
+          style={styles.krakenOverlay}
+        >
+          <Text style={styles.krakenEmoji}>🐙</Text>
+          <Text style={styles.krakenTitle}>KRAKEN ATTACK</Text>
+          <Text style={styles.krakenSubtitle}>Le Kraken dévore les cartes faibles !</Text>
+          <View style={styles.krakenCards}>
+            {(() => {
+              const myCard = isPlayer1 ? gameState.krakenEvent.p1Card : gameState.krakenEvent.p2Card;
+              const oppCard = isPlayer1 ? gameState.krakenEvent.p2Card : gameState.krakenEvent.p1Card;
+              const myCardData = myCard ? getCardById(myCard) : null;
+              const oppCardData = oppCard ? getCardById(oppCard) : null;
+              
+              const formatCard = (card: typeof myCardData) => {
+                if (!card) return 'Aucune';
+                const suitEmoji: Record<string, string> = { H: '♥️', D: '♦️', C: '♣️', S: '♠️' };
+                const emoji = suitEmoji[card.suit as any] || '';
+                const rankName = ['', '', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'V', 'D', 'R', 'As'][card.rank] || '';
+                return `${rankName} ${emoji}`;
+              };
+              
+              return (
+                <>
+                  <Text style={styles.krakenCardText}>
+                    Vous : <Text style={styles.krakenCardValue}>{formatCard(myCardData)}</Text>
+                  </Text>
+                  <Text style={styles.krakenCardText}>
+                    {opponent?.name || 'Adversaire'} : <Text style={styles.krakenCardValue}>{formatCard(oppCardData)}</Text>
+                  </Text>
+                </>
+              );
+            })()}
+          </View>
+        </ReanimatedAnimated.View>
       )}
 
       {/* Badge Momentum Adversaire */}
@@ -849,6 +875,65 @@ const styles = StyleSheet.create({
     color: '#FFF',
     letterSpacing: 4,
     textAlign: 'center',
+  },
+  // 🐙 Styles Kraken Overlay
+  krakenOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(6, 78, 59, 0.92)', // Vert sombre océanique
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 200,
+  },
+  krakenEmoji: {
+    fontSize: 80,
+    marginBottom: 15,
+    textShadowColor: '#10B981',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 30,
+  },
+  krakenTitle: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#10B981', // Vert émeraude
+    letterSpacing: 4,
+    textAlign: 'center',
+    textShadowColor: '#10B981',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 25,
+    marginBottom: 8,
+  },
+  krakenSubtitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#D1FAE5', // Vert clair
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    marginBottom: 25,
+  },
+  krakenCards: {
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderWidth: 2,
+    borderColor: '#10B981',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  krakenCardText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#D1FAE5',
+    textAlign: 'center',
+  },
+  krakenCardValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFF',
+    letterSpacing: 1,
   },
   opponentHeaderRow: {
     flexDirection: 'row',
