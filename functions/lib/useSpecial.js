@@ -69,8 +69,8 @@ exports.useSpecial = functions.https.onCall(async (data, context) => {
             throw new functions.https.HttpsError('permission-denied', 'Not a player in this game');
         }
         const player = isPlayer1 ? game.player1 : game.player2;
-        // ✅ Vérifier que le joueur a des charges
-        if (player.specialCharges <= 0) {
+        // ✅ Vérifier que le joueur a des charges OU le Momentum
+        if (player.specialCharges <= 0 && !player.hasMomentum) {
             throw new functions.https.HttpsError('failed-precondition', 'No charges available');
         }
         // ✅ Vérifier que le joueur n'a pas déjà lock

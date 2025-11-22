@@ -8,6 +8,7 @@ interface SpecialChargesProps {
   onUseDefense?: () => void;
   disabled?: boolean;
   opponentCharges?: number; // Afficher les charges adverses
+  hasMomentum?: boolean; // Afficher une charge bonus Momentum
 }
 
 export const SpecialCharges: React.FC<SpecialChargesProps> = ({
@@ -17,6 +18,7 @@ export const SpecialCharges: React.FC<SpecialChargesProps> = ({
   onUseDefense,
   disabled = false,
   opponentCharges,
+  hasMomentum = false,
 }) => {
   const [mode, setMode] = useState<'attack' | 'defense'>('attack');
   const nextChargeProgress = (streak % 3) / 3; // Changé de 10 à 3
@@ -42,6 +44,13 @@ export const SpecialCharges: React.FC<SpecialChargesProps> = ({
             {i < charges && <Text style={styles.chargeIcon}>⚡</Text>}
           </View>
         ))}
+        
+        {/* Charge Momentum (bonus gratuit) */}
+        {hasMomentum && (
+          <View style={[styles.charge, styles.chargeMomentum]}>
+            <Text style={styles.chargeIcon}>🔥</Text>
+          </View>
+        )}
       </View>
 
       {/* Barre de progression vers la prochaine charge */}
@@ -91,6 +100,15 @@ const styles = StyleSheet.create({
     borderColor: '#FBBF24',
     backgroundColor: 'rgba(251, 191, 36, 0.3)',
     shadowColor: '#FBBF24',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  chargeMomentum: {
+    borderColor: '#EF4444',
+    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    shadowColor: '#EF4444',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 8,

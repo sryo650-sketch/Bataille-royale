@@ -5,7 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme, useThemeColor } from './src/contexts/ThemeContext';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { UserStatsProvider } from './src/contexts/UserStatsContext';
-import { AuthProvider } from './src/contexts/AuthContext';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { NavigationHandler, Screen, GameConfig } from './src/types';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { GameScreen } from './src/screens/GameScreen';
@@ -22,6 +22,7 @@ const AppNavigator: React.FC = () => {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const colors = useThemeColor();
   const { effective } = useTheme();
+  const { currentUser } = useAuth(); // ✅ Accès à l'état d'authentification
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -44,32 +45,39 @@ const AppNavigator: React.FC = () => {
     setHasCompletedOnboarding(true);
   };
 
+  // 🧪 DÉVELOPPEMENT : Bypass onboarding pour accès direct au TestBackendScreen
+  // ATTENTION : L'onboarding demande pseudo/email/photo mais PAS de mot de passe !
+  // Pour te connecter à Firebase, utilise le bouton Logout dans TestBackendScreen
+  
   // Show loading while checking onboarding status
-  if (hasCompletedOnboarding === null) {
-    return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-        <StatusBar style={effective === 'light' ? 'dark' : 'light'} />
-        <View style={styles.container} />
-      </SafeAreaView>
-    );
-  }
+  // if (hasCompletedOnboarding === null) {
+  //   return (
+  //     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+  //       <StatusBar style={effective === 'light' ? 'dark' : 'light'} />
+  //       <View style={styles.container} />
+  //     </SafeAreaView>
+  //   );
+  // }
 
   // Show onboarding if not completed
-  if (!hasCompletedOnboarding) {
-    return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-        <StatusBar style={effective === 'light' ? 'dark' : 'light'} />
-        <OnboardingScreen onComplete={handleOnboardingComplete} />
-      </SafeAreaView>
-    );
-  }
+  // if (!hasCompletedOnboarding) {
+  //   return (
+  //     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+  //       <StatusBar style={effective === 'light' ? 'dark' : 'light'} />
+  //       <OnboardingScreen onComplete={handleOnboardingComplete} />
+  //     </SafeAreaView>
+  //   );
+  // }
 
   const renderScreen = () => {
-    // 🧪 TEST BACKEND - Activer pour tester l'architecture server-authoritative
-    return <TestBackendScreen />;
+    // 🧪 TEST FIREBASE - Écran de login Firebase (email + password)
+    // Affiche TestFirebaseScreen si non connecté, sinon TestBackendScreen
+    if (!currentUser) {
+      return <TestFirebaseScreen />;
+    }
     
-    // 🧪 TEST FIREBASE - Décommenter pour tester
-    // return <TestFirebaseScreen />;
+    // 🧪 TEST BACKEND - Écran de test après connexion
+    return <TestBackendScreen />;
     
     if (currentScreen === Screen.HOME) {
       return <HomeScreen onNavigate={handleNavigate} />;

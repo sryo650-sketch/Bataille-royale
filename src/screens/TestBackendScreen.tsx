@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useGameActions, useGameRealtime, useInactivityTimer } from '../hooks';
 import { useRapidTimer } from '../hooks/useRapidTimer';
 import { useThemeColor } from '../contexts/ThemeContext';
 import { NewGameScreen } from './NewGameScreen';
 import { Screen } from '../types';
+import { auth } from '../lib/firebase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Écran de test pour valider l'architecture backend
@@ -126,6 +128,31 @@ export const TestBackendScreen: React.FC = () => {
     } catch (err) {
       addLog('❌ Erreur: ' + (err as Error).message);
     }
+  };
+
+  // Test 5: Déconnexion (pour recharger avec nouvelle clé Firebase)
+  const handleLogout = async () => {
+    Alert.alert(
+      '🔓 Déconnexion',
+      'Voulez-vous vous déconnecter ? Vous devrez vous reconnecter avec la nouvelle clé Firebase.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Déconnexion',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              addLog('🔓 Déconnexion...');
+              await auth.signOut();
+              await AsyncStorage.clear(); // Clear toutes les données locales
+              addLog('✅ Déconnecté avec succès');
+            } catch (err) {
+              addLog('❌ Erreur déconnexion: ' + (err as Error).message);
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -259,6 +286,13 @@ export const TestBackendScreen: React.FC = () => {
         >
           <Text style={[styles.buttonText, { color: colors.text }]}>🔄 Reset</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.logoutButton, { backgroundColor: '#EF4444' }]}
+          onPress={handleLogout}
+        >
+          <Text style={styles.buttonText}>🔓 Logout</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Section: Logs */}
@@ -361,6 +395,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resetButton: {
+    marginTop: 8,
+  },
+  logoutButton: {
     marginTop: 8,
   },
   buttonText: {

@@ -65,8 +65,14 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
   // Gestion Showdown & Transition Fluide
   const [showResult, setShowResult] = useState(false); // Contrôle la visibilité (Face Up)
   const [usePrevCards, setUsePrevCards] = useState(false); // Contrôle les données (Old vs New)
-  const [prevCards, setPrevCards] = useState<{ myCard?: string, oppCard?: string }>({});
-  const prevRound = React.useRef(gameState?.roundCount ?? 0);
+  const [prevCards, setPrevCards] = useState<{ 
+    myCard?: string; 
+    oppCard?: string; 
+    mySpecial?: 'attack' | 'defense' | null;
+    oppSpecial?: 'attack' | 'defense' | null;
+  }>({});
+const prevRound = React.useRef(gameState?.roundCount ?? 0);
+  const lockingRef = React.useRef(false); // Protection double-clic
   
   // Flip Manuel
   const [myCardRevealed, setMyCardRevealed] = useState(false);
@@ -118,11 +124,14 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
       if (!usePrevCards) {
         setPrevCards({
           myCard: currentPlayer?.deck?.[0],
-          oppCard: opponent?.deck?.[0]
+          oppCard: opponent?.deck?.[0],
+          mySpecial: currentPlayer?.usingSpecial,
+          oppSpecial: opponent?.usingSpecial
         });
       }
     }
   }, [gameState?.roundCount, currentPlayer?.deck, opponent?.deck, usePrevCards]);
+
 
   // Animation "Pulse" (Joueur seulement)
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
@@ -170,7 +179,9 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
 
   // Handlers
   const handleLockCard = useCallback(async () => {
-    if (!gameId || actionLoading) return;
+    if (!gameId || actionLoading || lockingRef.current) return;
+    
+    lockingRef.current = true;
     try {
       setError(null);
       
@@ -182,6 +193,8 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
       await lockCard(gameId);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      lockingRef.current = false;
     }
   }, [gameId, actionLoading, lockCard, useSpecial, setError, localUsingSpecial]);
 
@@ -204,7 +217,9 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
   }, [currentPlayer?.isLocked, currentPlayer?.specialCharges, currentPlayer?.hasMomentum, localUsingSpecial]);
 
   const handleSurrender = useCallback(async () => {
-    if (!gameId || actionLoading) return;
+    if (!gameId || actionLoading || lockingRef.current) return;
+    
+    lockingRef.current = true;
 
     Alert.alert(
       "Abandonner",
@@ -268,17 +283,30 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
   const displayedOppCard = displayedOppCardId ? getCardById(displayedOppCardId) : undefined;
   const displayedMyCard = displayedMyCardId ? getCardById(displayedMyCardId) : undefined;
 
+
   // Détermination du gagnant de la manche (uniquement pendant showResult)
   const roundResult = useMemo(() => {
     if (!showResult || !displayedMyCard || !displayedOppCard) return null;
     
-    const myValue = displayedMyCard.rank;
-    const oppValue = displayedOppCard.rank;
+    // Valeurs de base
+    let myValue = displayedMyCard.rank;
+    let oppValue = displayedOppCard.rank;
+    
+    // Appliquer les bonus (ATTACK_BONUS = 10, DEFENSE_BONUS = 10)
+    // Utiliser les bonus stockés si on affiche les anciennes cartes
+    const mySpecial = usePrevCards ? prevCards.mySpecial : currentPlayer?.usingSpecial;
+    const oppSpecial = usePrevCards ? prevCards.oppSpecial : opponent?.usingSpecial;
+    
+    if (mySpecial === 'attack') myValue += 10;
+    else if (mySpecial === 'defense') myValue += 10;
+    
+    if (oppSpecial === 'attack') oppValue += 10;
+    else if (oppSpecial === 'defense') oppValue += 10;
     
     if (myValue > oppValue) return 'win';
     if (myValue < oppValue) return 'lose';
     return 'draw';
-  }, [showResult, displayedMyCard, displayedOppCard]);
+  }, [showResult, displayedMyCard, displayedOppCard, usePrevCards, prevCards, currentPlayer?.usingSpecial, opponent?.usingSpecial]);
 
   // État FaceUp
   const isOppFaceUp = showResult || (currentPlayer?.isLocked && (opponent?.isLocked ?? false));
@@ -317,6 +345,7 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
       </View>
     );
   }
+
 
   // RENDER UI
   return (
@@ -361,8 +390,8 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
           >
             <Text style={styles.pugnaRegalisTitle}>⚔️ PUGNA REGALIS ⚔️</Text>
             <Text style={styles.pugnaRegalisSubtitle}>BATAILLE !</Text>
-          </ReanimatedAnimated.View>
-        ) : (
+            </ReanimatedAnimated.View>
+          ) : (
           <ReanimatedAnimated.Text 
             entering={FadeInDown.duration(400)}
             exiting={FadeOut.duration(200)}
@@ -375,6 +404,18 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
             {roundResult === 'win' ? 'Manche gagnée' : 'Manche perdue'}
           </ReanimatedAnimated.Text>
         )
+      )}
+
+      {/* Badge Momentum Adversaire */}
+      {opponent?.hasMomentum && !opponent?.isLocked && (
+        <ReanimatedAnimated.View 
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(200)}
+          style={styles.momentumBadgeOpponent}
+        >
+          <Text style={styles.momentumTextOpponent}>🔥 MOMENTUM</Text>
+          <Text style={styles.momentumSubtextOpponent}>Bonus Actif</Text>
+        </ReanimatedAnimated.View>
       )}
 
       {/* ZONE ADVERSAIRE (Haut) */}
@@ -408,6 +449,7 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
           <SpecialCharges 
             charges={opponent?.specialCharges ?? 0} 
             streak={0} 
+            hasMomentum={opponent?.hasMomentum}
           />
         </View>
 
@@ -431,24 +473,23 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
       {/* ESPACE CENTRAL FLEXIBLE */}
       <View style={styles.centralZone}>
         {/* Affichage du Pot pendant les batailles */}
-        {roundResult === 'draw' && (
-          <ReanimatedAnimated.View 
-            entering={FadeIn.duration(400)}
-            style={styles.potDisplay}
-          >
-            <Text style={styles.potIcon}>⚔️</Text>
-            <Text style={styles.potLabel}>POT DE LA BATAILLE</Text>
-            <Text style={styles.potValue}>En jeu</Text>
-          </ReanimatedAnimated.View>
+        {roundResult === 'draw' && gameState?.pot && gameState.pot.length > 0 && (
+          <View style={styles.potDisplay}>
+            <Text style={styles.potText}>Pot : {gameState.pot.length} cartes</Text>
+          </View>
         )}
       </View>
 
       {/* Badge Momentum */}
       {currentPlayer?.hasMomentum && !currentPlayer?.isLocked && (
-        <View style={styles.momentumBadge}>
+        <ReanimatedAnimated.View 
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(200)}
+          style={styles.momentumBadge}
+        >
           <Text style={styles.momentumText}>🔥 MOMENTUM</Text>
           <Text style={styles.momentumSubtext}>Bonus GRATUIT</Text>
-        </View>
+        </ReanimatedAnimated.View>
       )}
 
       {/* ZONE JOUEUR (Bas) */}
@@ -457,22 +498,46 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
         {/* Contrôles */}
         <View style={styles.controls}>
           {showResult || usePrevCards ? (
-            <Text style={styles.waitingText}>RÉSOLUTION...</Text>
-          ) : currentPlayer?.isLocked || actionLoading ? (
-            <Text style={styles.waitingText}>EN ATTENTE...</Text>
-          ) : isMyFaceUp ? (
-            <TouchableOpacity
-              style={styles.combatButton}
-              onPress={handleLockCard}
-              disabled={actionLoading}
+            <ReanimatedAnimated.Text 
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+              style={styles.waitingText}
             >
-              <Text style={styles.combatButtonText}>COMBATTRE</Text>
-              {turnTimeLeft !== null && (
-                <Text style={styles.combatTimer}>{turnTimeLeft}s</Text>
-              )}
-            </TouchableOpacity>
+              RÉSOLUTION...
+            </ReanimatedAnimated.Text>
+          ) : currentPlayer?.isLocked || actionLoading ? (
+            <ReanimatedAnimated.Text 
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+              style={styles.waitingText}
+            >
+              EN ATTENTE...
+            </ReanimatedAnimated.Text>
+          ) : isMyFaceUp ? (
+            <ReanimatedAnimated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+            >
+              <TouchableOpacity
+                style={[styles.combatButton, actionLoading && styles.disabledButton]}
+                onPress={handleLockCard}
+                disabled={actionLoading}
+                activeOpacity={actionLoading ? 1 : 0.7}
+              >
+                <Text style={styles.combatButtonText}>COMBATTRE</Text>
+                {turnTimeLeft !== null && (
+                  <Text style={styles.combatTimer}>{turnTimeLeft}s</Text>
+                )}
+              </TouchableOpacity>
+            </ReanimatedAnimated.View>
           ) : (
-            <Text style={styles.hintText}>DÉVOILEZ VOS ARMES</Text>
+            <ReanimatedAnimated.Text 
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+              style={styles.hintText}
+            >
+              DÉVOILEZ VOS ARMES
+            </ReanimatedAnimated.Text>
           )}
         </View>
 
@@ -502,7 +567,7 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
             <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
               <TouchableOpacity 
                 onPress={handleFlip}
-                activeOpacity={0.9}
+                  activeOpacity={0.9}
                 disabled={currentPlayer?.isLocked || isFlipping}
               >
                 <Card
@@ -513,7 +578,7 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
                   isLosing={roundResult === 'lose'}
                   size="md"
                 />
-              </TouchableOpacity>
+                </TouchableOpacity>
             </Animated.View>
           </View>
 
@@ -537,7 +602,8 @@ export const NewGameScreen: React.FC<NewGameScreenProps> = ({ onNavigate, gameId
           <View style={styles.playerInfoCompact}>
             <SpecialCharges 
               charges={currentPlayer?.specialCharges ?? 0} 
-              streak={0} 
+              streak={0}
+              hasMomentum={currentPlayer?.hasMomentum}
             />
             <View style={{flex: 1, marginLeft: 15}}>
               <HealthBar 
@@ -639,38 +705,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   potDisplay: {
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
+    backgroundColor: 'rgba(212, 175, 55, 0.2)',
     borderWidth: 2,
     borderColor: '#D4AF37',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    shadowColor: '#D4AF37',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 5,
   },
-  potIcon: {
-    fontSize: 32,
-    marginBottom: 8,
-  },
-  potLabel: {
-    fontSize: 12,
+  potText: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#D4AF37',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  potValue: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#FFF',
+    letterSpacing: 0.5,
   },
   momentumBadge: {
     position: 'absolute',
-    bottom: 280,
+    bottom: 380,
+    right: 20,
+    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    zIndex: 50,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  momentumText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#3B82F6',
+    letterSpacing: 0.5,
+  },
+  momentumSubtext: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#93C5FD',
+    marginTop: 1,
+  },
+  momentumBadgeOpponent: {
+    position: 'absolute',
+    top: 360,
     right: 20,
     backgroundColor: 'rgba(239, 68, 68, 0.3)',
     borderWidth: 2,
@@ -686,13 +767,13 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 10,
   },
-  momentumText: {
+  momentumTextOpponent: {
     fontSize: 11,
     fontWeight: '900',
     color: '#EF4444',
     letterSpacing: 0.5,
   },
-  momentumSubtext: {
+  momentumSubtextOpponent: {
     fontSize: 8,
     fontWeight: 'bold',
     color: '#FCA5A5',

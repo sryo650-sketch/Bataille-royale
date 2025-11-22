@@ -10,10 +10,10 @@ exports.GAME_CONFIG = {
     // ⏱️ TIMERS
     RAPID_MODE_DURATION: 180, // 3 minutes (en secondes)
     ROUND_TIMEOUT: 10, // Temps max par round avant auto-lock (en secondes)
-    MAX_TIMEOUTS: 3, // Nombre max de timeouts avant défaite automatique
+    MAX_TIMEOUTS: 6, // Nombre max de timeouts avant défaite automatique (6 × 10s = 1 minute)
     // ⚡ CHARGES SPÉCIALES
-    ATTACK_BONUS: 5, // Bonus de la charge Attack
-    DEFENSE_BONUS: 3, // Bonus de la charge Defense
+    ATTACK_BONUS: 10, // Bonus de la charge Attack
+    DEFENSE_BONUS: 10, // Bonus de la charge Defense
     MAX_CHARGES: 3, // Maximum de charges stockables
     CHARGE_UNLOCK_INTERVAL: 10, // Gagner une charge tous les X rounds
     // 🎮 MODES DE JEU

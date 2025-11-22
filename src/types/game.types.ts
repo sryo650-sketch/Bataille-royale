@@ -33,6 +33,9 @@ export interface PlayerState {
   // État du round
   isLocked: boolean;
   usingSpecial: SpecialType | null;
+  
+  // Momentum (règle spéciale)
+  hasMomentum?: boolean; // Si true, le prochain bonus est gratuit
 }
 
 export interface GameState {

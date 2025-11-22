@@ -63,6 +63,7 @@ export const createGame = functions.https.onCall(
         isLocked: false,
         usingSpecial: null,
         timeoutCount: 0,
+        hasMomentum: false,
       };
 
       // État du joueur 2 (adversaire ou bot)
@@ -92,6 +93,7 @@ export const createGame = functions.https.onCall(
           isLocked: false,
           usingSpecial: null,
           timeoutCount: 0,
+          hasMomentum: false,
         };
       } else {
         // Jouer contre un bot
@@ -106,6 +108,7 @@ export const createGame = functions.https.onCall(
           isLocked: false,
           usingSpecial: null,
           timeoutCount: 0,
+          hasMomentum: false,
         };
       }
 

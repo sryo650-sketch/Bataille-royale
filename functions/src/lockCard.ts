@@ -112,9 +112,19 @@ export const lockCard = functions.https.onCall(
         );
       }
 
-      // Déduire la charge si une charge spéciale est utilisée
+      // 🔥 MOMENTUM : Déduire la charge si une charge spéciale est utilisée
       if (player.usingSpecial) {
-        player.specialCharges = Math.max(0, player.specialCharges - 1);
+        if (player.hasMomentum) {
+          // Bonus GRATUIT grâce au momentum
+          functions.logger.info('Momentum used - free special', { 
+            gameId, 
+            playerId: context.auth.uid 
+          });
+          player.hasMomentum = false; // Consommer le momentum
+        } else {
+          // Coût normal
+          player.specialCharges = Math.max(0, player.specialCharges - 1);
+        }
       }
 
       // Verrouiller le joueur

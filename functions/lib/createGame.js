@@ -68,7 +68,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
         // État du joueur 1
         const player1 = Object.assign(Object.assign({ uid: context.auth.uid, name: player1Data.name || 'Player 1', countryCode: player1Data.countryCode || 'FR' }, (player1Data.photoURL && { avatar: player1Data.photoURL })), { deck: (0, cardUtils_1.deckToIds)(p1Deck), currentCardIndex: 0, score: 0, specialCharges: mode === 'rapid'
                 ? gameConfig_1.GAME_CONFIG.RAPID_STARTING_CHARGES
-                : gameConfig_1.GAME_CONFIG.CLASSIC_STARTING_CHARGES, isLocked: false, usingSpecial: null, timeoutCount: 0 });
+                : gameConfig_1.GAME_CONFIG.CLASSIC_STARTING_CHARGES, isLocked: false, usingSpecial: null, timeoutCount: 0, hasMomentum: false });
         // État du joueur 2 (adversaire ou bot)
         let player2;
         if (opponentId && opponentId !== 'bot') {
@@ -78,7 +78,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
             if (!player2Data) {
                 throw new functions.https.HttpsError('not-found', 'Opponent profile not found');
             }
-            player2 = Object.assign(Object.assign({ uid: opponentId, name: player2Data.name || 'Player 2', countryCode: player2Data.countryCode || 'FR' }, (player2Data.photoURL && { avatar: player2Data.photoURL })), { deck: (0, cardUtils_1.deckToIds)(p2Deck), currentCardIndex: 0, score: 0, specialCharges: 0, isLocked: false, usingSpecial: null, timeoutCount: 0 });
+            player2 = Object.assign(Object.assign({ uid: opponentId, name: player2Data.name || 'Player 2', countryCode: player2Data.countryCode || 'FR' }, (player2Data.photoURL && { avatar: player2Data.photoURL })), { deck: (0, cardUtils_1.deckToIds)(p2Deck), currentCardIndex: 0, score: 0, specialCharges: 0, isLocked: false, usingSpecial: null, timeoutCount: 0, hasMomentum: false });
         }
         else {
             // Jouer contre un bot
@@ -93,6 +93,7 @@ exports.createGame = functions.https.onCall(async (data, context) => {
                 isLocked: false,
                 usingSpecial: null,
                 timeoutCount: 0,
+                hasMomentum: false,
             };
         }
         // Créer l'état initial de la partie

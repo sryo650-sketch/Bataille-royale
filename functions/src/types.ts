@@ -18,6 +18,7 @@ export interface PlayerState {
   isLocked: boolean;
   usingSpecial: SpecialType | null;
   timeoutCount: number; // Nombre de fois où le joueur n'a pas lock à temps
+  hasMomentum: boolean; // Si true, le prochain bonus est gratuit
 }
 
 export interface GameState {

@@ -98,6 +98,18 @@ export async function resolveRound(
     // Préparer le prochain round
     const nextRoundCount = game.roundCount + 1;
 
+    // 🔥 MOMENTUM : Si un joueur gagne avec un bonus activé, il obtient un bonus gratuit au prochain round
+    let p1Momentum = false;
+    let p2Momentum = false;
+
+    if (winner === 'player1' && game.player1.usingSpecial !== null) {
+      p1Momentum = true;
+      functions.logger.info('Player 1 gained momentum', { gameId: game.id });
+    } else if (winner === 'player2' && game.player2.usingSpecial !== null) {
+      p2Momentum = true;
+      functions.logger.info('Player 2 gained momentum', { gameId: game.id });
+    }
+
     // Vérifier si un joueur gagne une charge (tous les 10 rounds)
     let p1NewCharges = game.player1.specialCharges;
     let p2NewCharges = game.player2.specialCharges;
@@ -119,12 +131,14 @@ export async function resolveRound(
       'player1.specialCharges': p1NewCharges,
       'player1.isLocked': false,
       'player1.usingSpecial': null,
+      'player1.hasMomentum': p1Momentum,
       'player2.deck': newPlayer2Deck,
       'player2.currentCardIndex': 0,
       'player2.score': game.player2.score,
       'player2.specialCharges': p2NewCharges,
       'player2.isLocked': false,
       'player2.usingSpecial': null,
+      'player2.hasMomentum': p2Momentum,
       pot: newPot,
       phase: 'WAITING',
       roundCount: nextRoundCount,
